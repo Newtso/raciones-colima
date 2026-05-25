@@ -511,27 +511,60 @@ function updateStatChips() {
   chipA.className = 'stat-chip' + (asignados > 0 ? ' loaded' : '');
 }
 
-function updateCountdown() {
-  const now    = new Date();
-  const h = now.getHours(), m = now.getMinutes();
-  const chip   = document.getElementById('chipCountdown');
-  const START  = 13 * 60;   // 1:00 pm
-  const END    = 15 * 60;   // 3:00 pm
-  const cur    = h * 60 + m;
+function getNextReparto() {
+  const now  = new Date();
+  const dow  = now.getDay(); // 0=Dom 1=Lun ... 5=Vie 6=Sáb
+  const mins = now.getHours() * 60 + now.getMinutes();
+  const END  = 15 * 60; // 3pm
 
-  if (cur >= END) {
-    chip.innerHTML = '<i class="ti ti-clock-off"></i> Ventana cerrada';
-    chip.className = 'stat-chip stat-chip-time closed';
-  } else if (cur >= START) {
+  let daysToAdd = 0;
+  if (dow === 6) {                          // Sábado → Lunes
+    daysToAdd = 2;
+  } else if (dow === 0) {                   // Domingo → Lunes
+    daysToAdd = 1;
+  } else if (mins >= END) {                 // Lun-Jue después 3pm → día siguiente
+    daysToAdd = dow === 5 ? 3 : 1;         // Viernes → Lunes (3 días)
+  }
+
+  const next = new Date(now);
+  next.setDate(now.getDate() + daysToAdd);
+  next.setHours(13, 0, 0, 0);
+  return next;
+}
+
+function updateCountdown() {
+  const now   = new Date();
+  const mins  = now.getHours() * 60 + now.getMinutes();
+  const dow   = now.getDay();
+  const chip  = document.getElementById('chipCountdown');
+  const START = 13 * 60;
+  const END   = 15 * 60;
+  const esFinDeSemana = dow === 0 || dow === 6;
+
+  if (!esFinDeSemana && mins >= START && mins < END) {
+    // Hora de repartir
     chip.innerHTML = '<i class="ti ti-rocket"></i> ¡Hora de repartir!';
     chip.className = 'stat-chip stat-chip-time go';
-  } else {
-    const diff = START - cur;
-    const hh   = Math.floor(diff / 60);
-    const mm   = diff % 60;
-    const txt  = hh > 0 ? `${hh}h ${mm}min` : `${mm} min`;
+  } else if (!esFinDeSemana && mins < START) {
+    // Hoy es día hábil, faltan minutos para las 1pm
+    const diff = START - mins;
+    const hh = Math.floor(diff / 60), mm = diff % 60;
+    const txt = hh > 0 ? `${hh}h ${mm}min` : `${mm} min`;
     chip.innerHTML = `<i class="ti ti-clock"></i> ${txt} para repartir`;
     chip.className = 'stat-chip stat-chip-time ready';
+  } else {
+    // Ventana cerrada → cuenta regresiva al próximo reparto
+    const next   = getNextReparto();
+    const diff   = Math.max(0, next - now);
+    const totalM = Math.floor(diff / 60000);
+    const hh     = Math.floor(totalM / 60);
+    const mm     = totalM % 60;
+    const DIAS   = ['dom','lun','mar','mié','jue','vie','sáb'];
+    const diaLabel = next.getDay() === now.getDay() + 1 || (now.getDay()===5 && next.getDay()===1)
+      ? '' : `${DIAS[next.getDay()]} · `;
+    const txt = hh > 0 ? `${diaLabel}${hh}h ${mm}min` : `${diaLabel}${mm} min`;
+    chip.innerHTML = `<i class="ti ti-clock"></i> Próximo reparto en ${txt}`;
+    chip.className = 'stat-chip stat-chip-time closed';
   }
 }
 
