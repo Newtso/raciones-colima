@@ -836,9 +836,11 @@ function assignTo(folio, repIdx) {
 
 // ── SUMMARY BAR ──
 function renderSummaryBar() {
-  const counts = [0,0,0,0];
-  Object.values(assignments).forEach(ri => { if (ri>=0&&ri<4) counts[ri]++; });
-  document.getElementById('summaryBar').innerHTML = repNames.map((n,i) =>
+  const counts = Array(repCount).fill(0);
+  Object.values(assignments).forEach(ri => { if (ri>=0&&ri<repCount) counts[ri]++; });
+  const bar = document.getElementById('summaryBar');
+  bar.style.gridTemplateColumns = `repeat(${repCount},1fr)`;
+  bar.innerHTML = repNames.map((n,i) =>
     `<div class="summary-chip${counts[i]>0?' has-items':''}">
       <div class="summary-chip-name">${n.split(' ')[0]}</div>
       <div class="summary-chip-count">${counts[i]}</div>
