@@ -220,6 +220,7 @@ button,a{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 </head>
 <body>
 
+<div id="adminContent">
 <div class="header">
   <div class="header-top">
     <div>
@@ -357,6 +358,7 @@ button,a{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 </div>
 
 <div class="toast" id="toast"></div>
+</div><!-- /adminContent -->
 
 <!-- Change Password Modal -->
 <div id="changePwdModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:center;justify-content:center">
@@ -401,7 +403,7 @@ button,a{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
       style="width:100%;padding:11px;border-radius:10px;background:var(--g);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">
       Entrar
     </button>
-    <button onclick="closeMonitorGate()"
+    <button id="gateCancelBtn" onclick="closeMonitorGate()"
       style="width:100%;padding:9px;border-radius:10px;background:transparent;border:1.5px solid var(--borde);color:var(--gray);font-size:13px;cursor:pointer">
       Cancelar
     </button>
@@ -606,14 +608,23 @@ let pendingAfterAuth = null; // 'monitor' | 'settings'
 
 function openMonitorGate(pending) {
   pendingAfterAuth = pending || 'monitor';
-  document.getElementById('gateTitle').textContent =
-    pending === 'settings' ? 'Acceso a Configuración' : 'Acceso al Monitor';
+  const titles = {
+    init:     'Panel de Administración',
+    settings: 'Acceso a Configuración',
+    monitor:  'Acceso al Monitor'
+  };
+  document.getElementById('gateTitle').textContent = titles[pendingAfterAuth] || 'Acceso al Monitor';
   document.getElementById('gateSubtitle').textContent = 'Ingresa tu contraseña de administrador';
+  // Ocultar cancelar cuando el acceso es obligatorio (primer ingreso)
+  const cancelBtn = document.getElementById('gateCancelBtn');
+  cancelBtn.style.display = pendingAfterAuth === 'init' ? 'none' : 'block';
   const gate = document.getElementById('monitorGate');
   gate.style.display = 'flex';
   setTimeout(() => document.getElementById('monitorPwdInput').focus(), 100);
 }
 function closeMonitorGate() {
+  // No cerrar si es acceso obligatorio al inicio y no está autenticado
+  if (pendingAfterAuth === 'init' && !monitorAuth) return;
   document.getElementById('monitorGate').style.display = 'none';
   document.getElementById('monitorPwdInput').value = '';
   document.getElementById('monitorPwdError').style.display = 'none';
@@ -625,12 +636,17 @@ function checkMonitorPwd() {
   if (input === stored) {
     monitorAuth = true;
     sessionStorage.setItem('rcMonitorAuth', '1');
-    closeMonitorGate();
-    if (pendingAfterAuth === 'settings') {
-      pendingAfterAuth = null;
+    const pending = pendingAfterAuth;
+    pendingAfterAuth = null;
+    document.getElementById('monitorGate').style.display = 'none';
+    document.getElementById('monitorPwdInput').value = '';
+    document.getElementById('monitorPwdError').style.display = 'none';
+    if (pending === 'init') {
+      // Mostrar contenido config que estaba oculto
+      document.getElementById('adminContent').style.display = 'block';
+    } else if (pending === 'settings') {
       openSettingsPanel();
     } else {
-      pendingAfterAuth = null;
       activateMonitorTab();
     }
   } else {
@@ -1259,6 +1275,12 @@ setInterval(updateCountdown, 60000);
 selectDia(currentDia);
 renderRepInputs();
 renderSummaryBar();
+
+// Bloquear contenido hasta autenticación
+if (!monitorAuth) {
+  document.getElementById('adminContent').style.display = 'none';
+  openMonitorGate('init');
+}
 </script>
 </body>
 </html>
