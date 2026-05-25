@@ -937,7 +937,7 @@ async function saveRoutes() {
     const batch = db.batch();
 
     // Borrar documentos del día que ya no corresponden a ningún rep activo
-    const repSlugsActivos = new Set(rutas.map(r => r.rep));
+    const repSlugsActivos = new Set(rutas.filter(r => r.clientes.length > 0).map(r => r.rep));
     const docsHoy = await db.collection('rutas').where('fecha', '==', fecha).get();
     docsHoy.forEach(doc => {
       if (!repSlugsActivos.has(doc.data().rep)) batch.delete(doc.ref);
