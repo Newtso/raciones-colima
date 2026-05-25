@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin Rutas — Raciones Colima</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<style>
+:root{--g:#90A5A0;--gl:#EEF3F2;--gd:#3D6260;--gray:#6B7280;--gray2:#F3F4F6;--borde:#E5E7EB;--txt:#111827;--red:#EF4444;--amber:#F59E0B}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0F4F3;min-height:100vh}
+
+/* HEADER */
+.header{background:var(--g);padding:14px 16px 0;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.header-title{color:#fff;font-size:16px;font-weight:700}
+.header-sub{color:rgba(255,255,255,.75);font-size:12px;margin-top:1px}
+.clock-widget{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:7px 14px;text-align:right;line-height:1}
+.clock-time{color:#fff;font-size:30px;font-weight:200;font-variant-numeric:tabular-nums;letter-spacing:3px}
+.clock-colon{opacity:1;animation:blink 1s step-start infinite}
+@keyframes blink{50%{opacity:.2}}
+.clock-date{color:rgba(255,255,255,.45);font-size:13px;margin-top:4px;letter-spacing:3px;text-align:center;font-weight:200}
+.stat-chip{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;border:1.5px solid var(--borde);background:#fff;color:var(--gray);font-size:14px;font-weight:600;white-space:nowrap}
+.stat-chip i{font-size:16px}
+.stat-chip.loaded{border-color:var(--g);color:var(--gd);background:var(--gl)}
+.stat-chip-time.ready{border-color:#F59E0B;color:#92400E;background:#FFF9EC}
+.stat-chip-time.go{border-color:#10B981;color:#065F46;background:#ECFDF5}
+.stat-chip-time.closed{border-color:var(--borde);color:var(--gray);background:#F3F4F6}
+.motiv-btn-row{display:contents}
+.motiv-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;border:1.5px solid var(--borde);background:#fff;color:var(--gd);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.motiv-btn:active{background:var(--gl)}
+.motiv-panel{margin-top:8px;padding:10px 14px;background:var(--gl);border-left:3px solid var(--g);border-radius:0 8px 8px 0;font-size:13px;font-style:italic;color:var(--gd);line-height:1.5;display:flex;align-items:flex-start;gap:8px}
+.motiv-panel .ti-quote{font-size:16px;flex-shrink:0;opacity:.5;margin-top:1px}
+.half-heart{display:inline-block;overflow:hidden;width:.55em;vertical-align:top}
+
+/* TABS */
+.tab-bar{display:flex;gap:4px;padding:0 4px}
+.tab{flex:1;padding:10px 8px;border:none;background:transparent;color:rgba(255,255,255,.7);font-size:14px;font-weight:500;cursor:pointer;border-radius:10px 10px 0 0;transition:all .2s;text-align:center}
+.tab.active{background:#fff;color:var(--gd);font-weight:700}
+
+/* SECTIONS */
+.section{display:none;padding:12px 12px 100px}
+.section.active{display:block}
+
+/* DAY SELECTOR */
+.day-controls-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.day-row{display:flex;gap:6px;flex-shrink:0}
+.day-stats{display:flex;align-items:center;gap:6px;flex:1;flex-wrap:wrap}
+.day-chip{padding:6px 14px;border-radius:20px;border:1.5px solid var(--borde);background:#fff;color:var(--gray);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}
+.day-chip.active{background:var(--g);border-color:var(--g);color:#fff}
+
+/* SETTINGS */
+.settings-toggle{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#fff;border-radius:10px;border:1px solid var(--borde);width:100%;cursor:pointer;font-size:13px;color:var(--gray);margin-bottom:8px;text-align:left}
+.settings-panel{background:#fff;border-radius:10px;border:1px solid var(--borde);padding:14px;margin-bottom:12px}
+.rep-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rep-input-wrap{display:flex;flex-direction:column;gap:4px}
+.rep-input-wrap label{font-size:11px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.4px}
+.rep-input{width:100%;padding:8px 10px;border:1.5px solid var(--borde);border-radius:8px;font-size:13px;color:var(--txt);outline:none}
+.rep-input:focus{border-color:var(--g)}
+.settings-save{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;margin-top:12px;border-radius:8px;background:var(--g);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer}
+
+/* LOAD BUTTON */
+.btn-load{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:10px;background:var(--g);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px}
+.btn-load:disabled{opacity:.6;cursor:not-allowed}
+
+/* SUMMARY BAR */
+.summary-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.summary-chip{background:#fff;border-radius:8px;border:1px solid var(--borde);padding:8px 4px;text-align:center}
+.summary-chip-name{font-size:11px;color:var(--gray);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.summary-chip-count{font-size:18px;font-weight:700;color:var(--txt)}
+.summary-chip.has-items{border-color:var(--g);background:var(--gl)}
+.summary-chip.has-items .summary-chip-count{color:var(--gd)}
+
+/* AUTO DISTRIBUTE */
+.btn-auto{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;border-radius:8px;background:#fff;border:1.5px solid var(--borde);color:var(--txt);font-size:13px;cursor:pointer;margin-bottom:12px}
+
+/* CLIENT CARDS */
+.client-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.client-card{background:#fff;border-radius:12px;border:1px solid var(--borde);overflow:hidden;display:flex;flex-direction:column}
+.client-card-head{padding:8px 10px 6px;display:flex;align-items:flex-start;gap:7px}
+.client-card-info{flex:1;min-width:0}
+.cc-name{font-size:12px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-addr{font-size:11px;color:var(--gray);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-platillo{font-size:11px;color:var(--g);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rep-btns{display:grid;grid-template-columns:repeat(2,1fr);gap:3px;padding:0 8px 8px}
+.rep-btn{padding:5px 2px;border-radius:6px;border:1.5px solid var(--borde);background:#fff;font-size:10px;color:var(--gray);cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all .15s}
+.rep-btn.selected{background:var(--g);border-color:var(--g);color:#fff;font-weight:600}
+
+/* SAVE SECTION */
+.save-section{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--borde);padding:12px 16px;z-index:50}
+.btn-save{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border-radius:12px;background:var(--g);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer}
+.btn-save:disabled{opacity:.5;cursor:not-allowed}
+
+/* LINKS MODAL */
+.links-panel{background:#fff;border-radius:12px;border:1px solid var(--borde);padding:14px;margin-bottom:80px;margin-top:12px}
+.links-panel h3{font-size:14px;font-weight:700;color:var(--txt);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.link-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:8px 10px;background:var(--gray2);border-radius:8px}
+.link-row-name{font-size:13px;font-weight:600;color:var(--txt);min-width:60px}
+.link-url{flex:1;font-size:11px;color:var(--gray);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-copy{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:6px;background:var(--g);color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0}
+.btn-wa-link{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:6px;background:#25D366;color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;text-decoration:none}
+
+/* MONITOR */
+.monitor-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:10px 14px;background:#fff;border-radius:10px;border:1px solid var(--borde)}
+.monitor-header-l{font-size:13px;color:var(--gray)}
+.monitor-header-l span{font-weight:600;color:var(--txt)}
+.btn-refresh{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;background:var(--g);color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer}
+.rep-cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.rep-card{background:#fff;border-radius:12px;border:1px solid var(--borde);padding:12px;cursor:pointer;transition:border-color .2s}
+.rep-card:hover{border-color:var(--g)}
+.rep-card.expanded{border-color:var(--g);border-bottom-left-radius:0;border-bottom-right-radius:0}
+.rc-name{font-size:14px;font-weight:700;color:var(--txt);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rc-prog{height:5px;background:var(--gray2);border-radius:3px;margin-bottom:6px}
+.rc-prog-fill{height:5px;background:var(--g);border-radius:3px;transition:width .4s}
+.rc-counts{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.rc-delivered{font-size:20px;font-weight:800;color:var(--gd)}
+.rc-total{font-size:12px;color:var(--gray);margin-top:2px}
+.rc-status{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600}
+.st-none{background:#F3F4F6;color:var(--gray)}
+.st-active{background:#FEF3C7;color:#92400E}
+.st-done{background:var(--gl);color:var(--gd)}
+.rc-time{font-size:11px;color:var(--gray);margin-top:4px;display:flex;flex-direction:column;gap:2px}
+.rc-time-row{display:flex;align-items:center;gap:4px}
+.time-badge{font-size:10px;padding:2px 6px;border-radius:10px;font-weight:600}
+.tc-wrap{margin-top:8px;display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--borde);padding-top:8px}
+.tc-row{display:flex;align-items:center;gap:6px}
+.tc-label{font-size:10px;color:var(--gray);width:54px;flex-shrink:0;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.tc-bar-wrap{flex:1;height:6px;background:var(--gray2);border-radius:3px;overflow:hidden}
+.tc-bar{height:6px;border-radius:3px;transition:width .5s}
+.tc-val{font-size:11px;font-weight:700;color:var(--txt);white-space:nowrap;min-width:38px;text-align:right}
+.tc-delta{display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-top:2px}
+.tc-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700}
+.ahead{background:#EEF3F2;color:#3D6260}
+.behind{background:#FEE2E2;color:#991B1B}
+
+/* DETAIL LIST */
+.detail-wrap{background:#fff;border:1px solid var(--g);border-top:none;border-radius:0 0 12px 12px;margin-top:-1px;margin-bottom:12px;padding:10px;display:none}
+.detail-wrap.open{display:block}
+.detail-row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;font-size:12px}
+.detail-row:not(:last-child){border-bottom:1px solid var(--borde)}
+.detail-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.dn-done{background:var(--gl);color:var(--gd)}
+.dn-pend{background:var(--gray2);color:var(--gray)}
+.detail-info{flex:1;min-width:0}
+.di-name{font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.di-hora{color:var(--gray);margin-top:1px}
+
+/* LOADING / EMPTY */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;gap:12px;color:var(--gray)}
+.spinner{width:32px;height:32px;border:3px solid var(--gray2);border-top-color:var(--g);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-monitor{text-align:center;padding:40px 24px;color:var(--gray)}
+.empty-monitor i{font-size:40px;color:var(--g);display:block;margin-bottom:10px}
+
+/* CLUSTER COLORS */
+.c0{background:#90A5A0}.c1{background:#F0A500}.c2{background:#3B82F6}.c3{background:#8B5CF6}
+.geo-progress{background:var(--gl);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:var(--gd);display:flex;align-items:center;gap:8px}
+.btn-group-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+
+/* MOBILE */
+button,a{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+
+@media (max-width:500px){
+  /* Day chips — grid uniforme en una sola fila */
+  .day-row{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;width:100%}
+  .day-controls-row{gap:6px}
+  .day-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:100%}
+  .stat-chip{padding:7px 4px;font-size:11px;justify-content:center;text-align:center;width:100%;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+  .motiv-btn-row{display:flex;gap:4px;grid-column:1/-1}
+  .motiv-btn{flex:1;padding:7px 4px;font-size:11px;justify-content:center;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+  .day-chip{padding:8px 2px;font-size:12px;text-align:center;border-radius:10px;line-height:1.3}
+
+  /* Summary bar — más compacta */
+  .summary-bar{gap:4px}
+  .summary-chip{padding:6px 2px}
+  .summary-chip-name{font-size:10px}
+  .summary-chip-count{font-size:16px}
+
+  /* Rep buttons — mayor área táctil, 2 filas de 2 */
+  .client-grid{grid-template-columns:repeat(2,1fr)}
+  .rep-btns{grid-template-columns:1fr 1fr;gap:4px;padding:0 8px 8px}
+  .rep-btn{padding:10px 4px;font-size:12px;min-height:40px}
+
+  /* Botones de agrupación — columna única */
+  .btn-group-2{grid-template-columns:1fr}
+
+  /* Settings — columna única */
+  .rep-grid{grid-template-columns:1fr}
+
+  /* Links panel — URL en su propia fila */
+  .link-row{flex-wrap:wrap;gap:6px}
+  .link-row-name{min-width:unset;font-size:12px}
+  .link-url{width:100%;order:-1;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .btn-copy,.btn-wa-link{flex:1;justify-content:center;padding:8px}
+
+  /* Monitor — tarjetas más compactas */
+  .rep-cards-grid{grid-template-columns:1fr 1fr;gap:6px}
+  .rc-name{font-size:13px}
+  .rc-delivered{font-size:18px}
+  .rc-time{font-size:10px}
+  .rc-status{font-size:10px;padding:2px 6px}
+
+  /* Monitor header corto */
+  .monitor-header-full{display:none}
+  .monitor-header-short{display:inline!important}
+
+  /* Sección padding */
+  .section{padding:10px 10px 100px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-title">Raciones Colima · Rutas</div>
+      <div class="header-sub">Panel de administración</div>
+    </div>
+    <div class="clock-widget">
+      <div class="clock-time"><span id="clockHH">--</span><span class="clock-colon">:</span><span id="clockMM">--</span></div>
+      <div class="clock-date">♥♥♥<span class="half-heart">♥</span></div>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab active" id="tabConfig" onclick="switchTab('config')">
+      <i class="ti ti-map-route"></i> Configurar
+    </button>
+    <button class="tab" id="tabMonitor" onclick="switchTab('monitor')">
+      <i class="ti ti-chart-bar"></i> Monitor
+    </button>
+  </div>
+</div>
+
+<!-- CONFIG SECTION -->
+<div class="section active" id="sectionConfig">
+
+  <!-- Day selector -->
+  <div style="margin-bottom:10px;margin-top:4px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div style="font-size:12px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.4px">Día a configurar</div>
+      <div id="weekLabel" style="font-size:12px;color:var(--gray);font-weight:500"></div>
+    </div>
+    <div class="day-controls-row">
+      <div class="day-row">
+        <button class="day-chip" data-dia="lunes" onclick="selectDia('lunes')">Lun</button>
+        <button class="day-chip" data-dia="martes" onclick="selectDia('martes')">Mar</button>
+        <button class="day-chip" data-dia="miercoles" onclick="selectDia('miercoles')">Mié</button>
+        <button class="day-chip" data-dia="jueves" onclick="selectDia('jueves')">Jue</button>
+        <button class="day-chip" data-dia="viernes" onclick="selectDia('viernes')">Vie</button>
+      </div>
+      <div class="day-stats">
+        <span class="stat-chip" id="chipPedidos"><i class="ti ti-package"></i> —</span>
+        <span class="stat-chip" id="chipAsignados"><i class="ti ti-users"></i> —</span>
+        <span class="stat-chip stat-chip-time" id="chipCountdown"><i class="ti ti-clock"></i> —</span>
+        <div class="motiv-btn-row">
+          <button class="motiv-btn" onclick="toggleMotiv()">
+            <i class="ti ti-sparkles"></i> Tu mensaje del día
+          </button>
+          <button class="motiv-btn" onclick="openChangePwd()" style="border-color:#90A5A0;color:#90A5A0;">
+            <i class="ti ti-key"></i> Contraseña
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="motiv-panel" id="motivPanel" style="display:none">
+      <i class="ti ti-quote"></i>
+      <span id="motivMsg"></span>
+    </div>
+  </div>
+
+  <!-- Rep names -->
+  <button class="settings-toggle" onclick="toggleSettings()">
+    <i class="ti ti-users"></i> Nombres de repartidores
+    <i class="ti ti-chevron-down" id="settingsChevron" style="margin-left:auto"></i>
+  </button>
+  <div class="settings-panel" id="settingsPanel" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <label style="font-size:13px;color:var(--gray);font-weight:500">Número de repartidores:</label>
+      <select id="repCountSelect" onchange="onRepCountChange()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--borde);font-size:13px;background:#fff">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4" selected>4</option>
+      </select>
+    </div>
+    <div class="rep-grid" id="repInputsGrid"></div>
+    <button class="settings-save" onclick="saveRepNames()">
+      <i class="ti ti-check"></i> Guardar nombres
+    </button>
+  </div>
+
+  <!-- Load button -->
+  <button class="btn-load" id="btnLoad" onclick="loadClients()">
+    <i class="ti ti-download"></i> Cargar pedidos del día
+  </button>
+
+  <!-- Summary bar -->
+  <div class="summary-bar" id="summaryBar"></div>
+
+  <!-- Grouping buttons -->
+  <div class="btn-group-2" id="btnGroup" style="display:none">
+    <button class="btn-auto" style="margin-bottom:0" onclick="autoGroupByProximity()">
+      <i class="ti ti-map-pin"></i> Agrupar por cercanía
+    </button>
+    <button class="btn-auto" style="margin-bottom:0" onclick="autoDistribute()">
+      <i class="ti ti-wand"></i> Distribuir equitativamente
+    </button>
+  </div>
+  <div class="geo-progress" id="geoProgress" style="display:none">
+    <div class="spinner" style="width:16px;height:16px;border-width:2px;flex-shrink:0"></div>
+    <span id="geoProgressText">Obteniendo coordenadas…</span>
+  </div>
+
+  <!-- Client list -->
+  <div id="clientList"></div>
+
+  <!-- Links panel (shown after save) -->
+  <div class="links-panel" id="linksPanel" style="display:none"></div>
+
+</div>
+
+<!-- MONITOR SECTION -->
+<div class="section" id="sectionMonitor">
+  <div class="monitor-header">
+    <div class="monitor-header-l">
+      <span class="monitor-header-full">Última actualización: </span>
+      <span class="monitor-header-short" style="display:none">Act. </span>
+      <span id="lastUpdate">--:--</span>
+    </div>
+    <button class="btn-refresh" onclick="loadMonitor()">
+      <i class="ti ti-refresh"></i> Actualizar
+    </button>
+  </div>
+  <div id="monitorContent">
+    <div class="empty-monitor">
+      <i class="ti ti-chart-bar"></i>
+      <p>Configura y guarda las rutas del día para ver el monitor</p>
+    </div>
+  </div>
+</div>
+
+<!-- SAVE BUTTON (config tab only) -->
+<div class="save-section" id="saveSectionEl" style="display:none">
+  <button class="btn-save" id="btnSave" onclick="saveRoutes()">
+    <i class="ti ti-device-floppy"></i> Guardar rutas y generar links
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Change Password Modal -->
+<div id="changePwdModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:20px;padding:28px 24px;width:300px;max-width:90vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+    <div style="width:56px;height:56px;background:var(--gl);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+      <i class="ti ti-key" style="font-size:28px;color:var(--g)"></i>
+    </div>
+    <h3 style="font-size:16px;font-weight:700;color:var(--txt);margin-bottom:6px">Cambiar contraseña</h3>
+    <p style="font-size:13px;color:var(--gray);margin-bottom:18px">Ingresa la contraseña actual y la nueva</p>
+    <input type="password" id="changePwdCurrent" placeholder="Contraseña actual"
+      style="width:100%;padding:10px 14px;border:1.5px solid var(--borde);border-radius:10px;font-size:14px;outline:none;margin-bottom:8px;text-align:center;box-sizing:border-box">
+    <input type="password" id="changePwdNew" placeholder="Nueva contraseña"
+      style="width:100%;padding:10px 14px;border:1.5px solid var(--borde);border-radius:10px;font-size:14px;outline:none;margin-bottom:8px;text-align:center;box-sizing:border-box">
+    <input type="password" id="changePwdConfirm" placeholder="Confirmar nueva contraseña"
+      style="width:100%;padding:10px 14px;border:1.5px solid var(--borde);border-radius:10px;font-size:14px;outline:none;margin-bottom:10px;text-align:center;box-sizing:border-box"
+      onkeydown="if(event.key==='Enter')confirmChangePwd()">
+    <p id="changePwdError" style="font-size:12px;color:#EF4444;margin-bottom:10px;display:none"></p>
+    <button onclick="confirmChangePwd()"
+      style="width:100%;padding:11px;border-radius:10px;background:var(--g);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">
+      Guardar contraseña
+    </button>
+    <button onclick="closeChangePwd()"
+      style="width:100%;padding:9px;border-radius:10px;background:transparent;border:1.5px solid var(--borde);color:var(--gray);font-size:13px;cursor:pointer">
+      Cancelar
+    </button>
+  </div>
+</div>
+
+<!-- Monitor Gate -->
+<div id="monitorGate" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:20px;padding:28px 24px;width:300px;max-width:90vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+    <div style="width:56px;height:56px;background:var(--gl);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+      <i class="ti ti-lock" style="font-size:28px;color:var(--g)"></i>
+    </div>
+    <h3 style="font-size:16px;font-weight:700;color:var(--txt);margin-bottom:6px" id="gateTitle">Acceso al Monitor</h3>
+    <p style="font-size:13px;color:var(--gray);margin-bottom:18px" id="gateSubtitle">Ingresa tu contraseña de administrador</p>
+    <input type="password" id="monitorPwdInput" placeholder="Contraseña"
+      style="width:100%;padding:10px 14px;border:1.5px solid var(--borde);border-radius:10px;font-size:14px;outline:none;margin-bottom:10px;text-align:center;box-sizing:border-box"
+      onkeydown="if(event.key==='Enter')checkMonitorPwd()">
+    <p id="monitorPwdError" style="font-size:12px;color:#EF4444;margin-bottom:10px;display:none">Contraseña incorrecta</p>
+    <button onclick="checkMonitorPwd()"
+      style="width:100%;padding:11px;border-radius:10px;background:var(--g);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">
+      Entrar
+    </button>
+    <button onclick="closeMonitorGate()"
+      style="width:100%;padding:9px;border-radius:10px;background:transparent;border:1.5px solid var(--borde);color:var(--gray);font-size:13px;cursor:pointer">
+      Cancelar
+    </button>
+  </div>
+</div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzNKgkpKNHq8eOjcB4Zcb2UIGR0HEnLmLRFXkaNq6YiDItglfKD-t9KnFiEXC-CFrIa/exec';
+
+// ── Firebase ──
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.firestore();
+// URL de producción — se usa cuando admin se abre como archivo local
+const SITE_URL = 'https://racionescolima.com';
+const SITE_BASE = location.protocol === 'file:'
+  ? SITE_URL + '/'
+  : location.origin + location.pathname.replace(/admin(\.html)?$/, '');
+const DIAS_LABEL = {lunes:'Lunes',martes:'Martes',miercoles:'Miércoles',jueves:'Jueves',viernes:'Viernes'};
+const MIN_POR_ENTREGA = 15;
+
+let repCount = parseInt(localStorage.getItem('rcRepCount') || '4');
+let repNames = JSON.parse(localStorage.getItem('rcRepNames') || '["Rep 1","Rep 2","Rep 3","Rep 4"]').slice(0, repCount);
+let clients = [];
+let assignments = {};
+let currentDia = detectDia();
+let monitorTimer = null;
+let monitorUnsub = null; // Firestore real-time listener
+let expandedRep = null;
+
+// ── MOTIVATIONAL ──
+const MOTIV = [
+  "Cada entrega es una sonrisa que llega a casa.",
+  "La puntualidad es el mejor ingrediente de tu servicio.",
+  "Un cliente satisfecho vale más que mil anuncios.",
+  "Hoy es una nueva oportunidad de superar tus metas.",
+  "La consistencia construye negocios duraderos.",
+  "Detrás de cada pedido hay alguien que confió en ti.",
+  "El esfuerzo de hoy es el éxito de mañana.",
+  "Tu trabajo alimenta familias. Eso importa.",
+  "Cada ruta completada es una promesa cumplida.",
+  "Los grandes negocios se construyen entrega a entrega.",
+  "La excelencia no es un acto, es un hábito.",
+  "Hoy entrega más que comida, entrega experiencias.",
+  "Un buen servicio se recuerda siempre.",
+  "El camino al éxito se pavimenta con constancia.",
+  "Tus repartidores son la cara de tu negocio. Cuídalos.",
+  "Un cliente feliz regresa. Un cliente muy feliz trae a sus amigos.",
+  "Organización hoy, tranquilidad mañana.",
+  "Cada semana es un capítulo nuevo. Escríbelo bien.",
+  "El detalle marca la diferencia entre ordinario y extraordinario.",
+  "La dedicación de hoy siembra los frutos de mañana.",
+  "Pequeños negocios, grandes corazones.",
+  "Ser puntual es una forma de decir: te respeto.",
+  "La calidad no cuesta, la calidad se invierte.",
+  "El trabajo en equipo hace que los sueños funcionen.",
+  "Cada pedido entregado a tiempo es una reputación ganada.",
+  "Lo que haces con amor, siempre se nota.",
+  "Un negocio exitoso nace de mil pequeñas decisiones correctas.",
+  "Hoy organiza, mañana disfruta los resultados.",
+  "El mejor marketing es un cliente que regresa solo.",
+  "La perseverancia convierte lo ordinario en extraordinario.",
+  "Tu negocio crece cada vez que alguien dice 'llegó a tiempo'.",
+  "Enfocado en la ruta, confiado en el resultado.",
+  "Servir bien es el arte más noble de cualquier negocio.",
+  "Cada día es una nueva oportunidad de mejorar tu récord.",
+  "Lo que mides, lo puedes mejorar.",
+  "El éxito está en los detalles que nadie más nota.",
+  "Una ruta bien organizada es tiempo que no se pierde.",
+  "La confianza de tus clientes es tu activo más valioso.",
+  "Haz hoy lo que otros dejan para mañana.",
+  "El orden es la base de todo buen servicio.",
+  "Cada día superado es un paso más cerca del objetivo.",
+  "Tus clientes no solo piden comida, piden confianza.",
+  "Cuando el equipo fluye, el negocio crece.",
+  "Un negocio bien gestionado es un negocio que dura.",
+  "La puntualidad no se improvisa, se construye con planeación.",
+  "Haz que cada entrega cuente.",
+  "El trabajo duro nunca pasa desapercibido.",
+  "Nuevas rutas, nuevas historias de éxito.",
+  "Lo mejor está por venir, sigue adelante.",
+  "Cada cliente es una razón para dar lo mejor de ti.",
+  "La pasión transforma el trabajo en vocación.",
+  "Un pedido bien entregado es el mejor contrato renovado.",
+  "Quien organiza bien, cosecha bien.",
+];
+function initMotivMsg() {
+  const now   = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const day   = Math.floor((now - start) / 86400000);
+  document.getElementById('motivMsg').textContent = MOTIV[day % MOTIV.length];
+}
+function toggleMotiv() {
+  const panel = document.getElementById('motivPanel');
+  panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+}
+
+function updateStatChips() {
+  const total    = clients.length;
+  const asignados = Object.keys(assignments).length;
+  const chipP    = document.getElementById('chipPedidos');
+  const chipA    = document.getElementById('chipAsignados');
+
+  chipP.innerHTML = `<i class="ti ti-package"></i> ${total > 0 ? total + ' pedido' + (total !== 1 ? 's' : '') : '—'}`;
+  chipP.className = 'stat-chip' + (total > 0 ? ' loaded' : '');
+
+  chipA.innerHTML = `<i class="ti ti-users"></i> ${total > 0 ? asignados + ' / ' + total + ' asignados' : '—'}`;
+  chipA.className = 'stat-chip' + (asignados > 0 ? ' loaded' : '');
+}
+
+function updateCountdown() {
+  const now    = new Date();
+  const h = now.getHours(), m = now.getMinutes();
+  const chip   = document.getElementById('chipCountdown');
+  const START  = 13 * 60;   // 1:00 pm
+  const END    = 15 * 60;   // 3:00 pm
+  const cur    = h * 60 + m;
+
+  if (cur >= END) {
+    chip.innerHTML = '<i class="ti ti-clock-off"></i> Ventana cerrada';
+    chip.className = 'stat-chip stat-chip-time closed';
+  } else if (cur >= START) {
+    chip.innerHTML = '<i class="ti ti-rocket"></i> ¡Hora de repartir!';
+    chip.className = 'stat-chip stat-chip-time go';
+  } else {
+    const diff = START - cur;
+    const hh   = Math.floor(diff / 60);
+    const mm   = diff % 60;
+    const txt  = hh > 0 ? `${hh}h ${mm}min` : `${mm} min`;
+    chip.innerHTML = `<i class="ti ti-clock"></i> ${txt} para repartir`;
+    chip.className = 'stat-chip stat-chip-time ready';
+  }
+}
+
+// ── UTILS ──
+function detectDia() {
+  const dia = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][new Date().getDay()];
+  return ['lunes','martes','miercoles','jueves','viernes'].includes(dia) ? dia : 'lunes';
+}
+function repSlug(name) {
+  return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'-');
+}
+function repLink(idx) {
+  return SITE_BASE + 'ruta.html?rep=' + encodeURIComponent(repSlug(repNames[idx]));
+}
+function updateClock() {
+  const n = new Date();
+  document.getElementById('clockHH').textContent = String(n.getHours()).padStart(2,'0');
+  document.getElementById('clockMM').textContent = String(n.getMinutes()).padStart(2,'0');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function fmtMin(min) {
+  if (min < 60) return min + ' min';
+  return Math.floor(min/60) + 'h ' + (min%60 > 0 ? (min%60)+'min' : '');
+}
+function timeStrToMin(str) {
+  if (!str) return null;
+  const [h,m] = str.split(':').map(Number);
+  return h*60+m;
+}
+
+// ── ADMIN GATE (Monitor + Configuración) ──
+let monitorAuth = sessionStorage.getItem('rcMonitorAuth') === '1';
+let pendingAfterAuth = null; // 'monitor' | 'settings'
+
+function openMonitorGate(pending) {
+  pendingAfterAuth = pending || 'monitor';
+  document.getElementById('gateTitle').textContent =
+    pending === 'settings' ? 'Acceso a Configuración' : 'Acceso al Monitor';
+  document.getElementById('gateSubtitle').textContent = 'Ingresa tu contraseña de administrador';
+  const gate = document.getElementById('monitorGate');
+  gate.style.display = 'flex';
+  setTimeout(() => document.getElementById('monitorPwdInput').focus(), 100);
+}
+function closeMonitorGate() {
+  document.getElementById('monitorGate').style.display = 'none';
+  document.getElementById('monitorPwdInput').value = '';
+  document.getElementById('monitorPwdError').style.display = 'none';
+  pendingAfterAuth = null;
+}
+function checkMonitorPwd() {
+  const input  = document.getElementById('monitorPwdInput').value;
+  const stored = localStorage.getItem('rcMonitorPwd') || '1234';
+  if (input === stored) {
+    monitorAuth = true;
+    sessionStorage.setItem('rcMonitorAuth', '1');
+    closeMonitorGate();
+    if (pendingAfterAuth === 'settings') {
+      pendingAfterAuth = null;
+      openSettingsPanel();
+    } else {
+      pendingAfterAuth = null;
+      activateMonitorTab();
+    }
+  } else {
+    document.getElementById('monitorPwdError').style.display = 'block';
+    document.getElementById('monitorPwdInput').value = '';
+    document.getElementById('monitorPwdInput').focus();
+  }
+}
+
+// ── CHANGE PASSWORD ──
+function openChangePwd() {
+  document.getElementById('changePwdCurrent').value = '';
+  document.getElementById('changePwdNew').value = '';
+  document.getElementById('changePwdConfirm').value = '';
+  document.getElementById('changePwdError').style.display = 'none';
+  document.getElementById('changePwdModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('changePwdCurrent').focus(), 100);
+}
+function closeChangePwd() {
+  document.getElementById('changePwdModal').style.display = 'none';
+}
+function confirmChangePwd() {
+  const current  = document.getElementById('changePwdCurrent').value;
+  const newPwd   = document.getElementById('changePwdNew').value.trim();
+  const confirm  = document.getElementById('changePwdConfirm').value.trim();
+  const stored   = localStorage.getItem('rcMonitorPwd') || '1234';
+  const errEl    = document.getElementById('changePwdError');
+  if (current !== stored) {
+    errEl.textContent = 'La contraseña actual es incorrecta';
+    errEl.style.display = 'block'; return;
+  }
+  if (!newPwd) {
+    errEl.textContent = 'La nueva contraseña no puede estar vacía';
+    errEl.style.display = 'block'; return;
+  }
+  if (newPwd !== confirm) {
+    errEl.textContent = 'Las contraseñas no coinciden';
+    errEl.style.display = 'block'; return;
+  }
+  localStorage.setItem('rcMonitorPwd', newPwd);
+  monitorAuth = false;
+  sessionStorage.removeItem('rcMonitorAuth');
+  closeChangePwd();
+  showToast('Contraseña actualizada ✓');
+}
+function activateMonitorTab() {
+  document.getElementById('sectionConfig').classList.remove('active');
+  document.getElementById('sectionMonitor').classList.add('active');
+  document.getElementById('tabConfig').classList.remove('active');
+  document.getElementById('tabMonitor').classList.add('active');
+  document.getElementById('saveSectionEl').style.display = 'none';
+  startMonitorListener();
+}
+
+// ── TABS ──
+function switchTab(tab) {
+  if (tab === 'monitor') {
+    if (!monitorAuth) { openMonitorGate('monitor'); return; }
+    activateMonitorTab();
+    return;
+  }
+  stopMonitorListener();
+  document.getElementById('sectionConfig').classList.add('active');
+  document.getElementById('sectionMonitor').classList.remove('active');
+  document.getElementById('tabConfig').classList.add('active');
+  document.getElementById('tabMonitor').classList.remove('active');
+  document.getElementById('saveSectionEl').style.display = clients.length > 0 ? 'block' : 'none';
+}
+
+function startMonitorListener() {
+  if (monitorUnsub) monitorUnsub(); // cancel previous listener
+  const fecha = new Date().toLocaleDateString('en-CA');
+  monitorUnsub = db.collection('rutas')
+    .where('fecha', '==', fecha)
+    .onSnapshot(snap => {
+      const reps = snap.docs.map(doc => {
+        const d = doc.data();
+        const clientes = d.clientes || [];
+        return {
+          nombre:      d.rep,
+          clientes:    clientes.map(c => ({ ...c, hora_entrega: c.horaEntrega || '' })),
+          total:       clientes.length,
+          entregados:  clientes.filter(c => c.estado === 'Entregado').length,
+          hora_inicio: d.horaInicio || null
+        };
+      });
+      const now = new Date();
+      document.getElementById('lastUpdate').textContent =
+        String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+      renderMonitor(reps);
+    }, () => {
+      // on error, fall back to Apps Script polling
+      loadMonitor();
+      monitorTimer = setInterval(loadMonitor, 15000);
+    });
+}
+
+function stopMonitorListener() {
+  if (monitorUnsub) { monitorUnsub(); monitorUnsub = null; }
+  if (monitorTimer) { clearInterval(monitorTimer); monitorTimer = null; }
+}
+
+// ── SETTINGS ──
+function toggleSettings() {
+  const panel = document.getElementById('settingsPanel');
+  if (panel.style.display === 'block') {
+    // Cerrar sin pedir contraseña
+    panel.style.display = 'none';
+    document.getElementById('settingsChevron').className = 'ti ti-chevron-down';
+    return;
+  }
+  // Abrir: requiere autenticación
+  if (!monitorAuth) {
+    openMonitorGate('settings');
+    return;
+  }
+  openSettingsPanel();
+}
+function openSettingsPanel() {
+  const panel = document.getElementById('settingsPanel');
+  const chev  = document.getElementById('settingsChevron');
+  renderRepInputs();
+  panel.style.display = 'block';
+  chev.className = 'ti ti-chevron-up';
+}
+function renderRepInputs() {
+  document.getElementById('repCountSelect').value = repCount;
+  document.getElementById('repInputsGrid').innerHTML = Array.from({length: repCount}, (_,i) => `
+    <div class="rep-input-wrap">
+      <label>Repartidor ${i+1}</label>
+      <input class="rep-input" id="repInput${i}" value="${repNames[i]||'Rep '+(i+1)}" placeholder="Nombre">
+    </div>`).join('');
+}
+function onRepCountChange() {
+  repCount = parseInt(document.getElementById('repCountSelect').value);
+  // Save current input values before re-rendering
+  for (let i = 0; i < 4; i++) {
+    const el = document.getElementById('repInput'+i);
+    if (el) repNames[i] = el.value.trim() || 'Rep '+(i+1);
+  }
+  renderRepInputs();
+}
+function saveRepNames() {
+  repCount = parseInt(document.getElementById('repCountSelect').value);
+  repNames = Array.from({length: repCount}, (_,i) =>
+    document.getElementById('repInput'+i).value.trim() || 'Rep '+(i+1)
+  );
+  localStorage.setItem('rcRepNames', JSON.stringify(repNames));
+  localStorage.setItem('rcRepCount', String(repCount));
+  renderSummaryBar();
+  renderClientList();
+  showToast('Ajustes guardados ✓');
+  toggleSettings();
+}
+
+// ── DAY SELECT ──
+function selectDia(dia) {
+  currentDia = dia;
+  document.querySelectorAll('.day-chip').forEach(c => c.classList.toggle('active', c.dataset.dia===dia));
+  clients = [];
+  assignments = {};
+  renderSummaryBar();
+  renderClientList();
+  updateStatChips();
+  document.getElementById('btnGroup').style.display = 'none';
+  document.getElementById('saveSectionEl').style.display = 'none';
+  document.getElementById('linksPanel').style.display = 'none';
+}
+
+// ── LOAD CLIENTS ──
+async function loadClients() {
+  const btn = document.getElementById('btnLoad');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0 auto"></div>';
+  try {
+    const res = await fetch(`${SCRIPT_URL}?action=clientes_hoy&dia=${currentDia}`);
+    const data = await res.json();
+    if (data.error) { showToast('Error: '+data.error); return; }
+    clients = data.clientes || [];
+    assignments = {};
+    if (clients.length===0) {
+      document.getElementById('clientList').innerHTML = '<div style="text-align:center;padding:32px;color:var(--gray);font-size:14px"><i class="ti ti-package-off" style="font-size:36px;display:block;margin-bottom:8px;color:var(--g)"></i>No hay pedidos de domicilio para este día</div>';
+    } else {
+      renderClientList();
+      renderSummaryBar();
+      updateStatChips();
+      document.getElementById('btnGroup').style.display = 'grid';
+      document.getElementById('saveSectionEl').style.display = 'block';
+    }
+  } catch(e) {
+    showToast('No se pudo conectar con Google Sheets');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-download"></i> Cargar pedidos del día';
+  }
+}
+
+// ── RENDER CLIENT LIST ──
+const CLUSTER_COLORS = ['#90A5A0','#F0A500','#3B82F6','#8B5CF6'];
+
+function renderClientList() {
+  const el = document.getElementById('clientList');
+  if (clients.length===0) return;
+  const geoCache = JSON.parse(localStorage.getItem('rcGeoCache')||'{}');
+  el.innerHTML = '<div class="client-grid">' + clients.map((c,i) => {
+    const asgn = assignments[c.folio];
+    const hasCoords = !!geoCache[c.folio];
+    const bubbleBg = asgn!==undefined ? CLUSTER_COLORS[asgn] : 'var(--gray2)';
+    const bubbleColor = asgn!==undefined ? '#fff' : 'var(--gray)';
+    const repBtns = repNames.map((n,ri) =>
+      `<button class="rep-btn${asgn===ri?' selected':''}" style="${asgn===ri?`background:${CLUSTER_COLORS[ri]};border-color:${CLUSTER_COLORS[ri]}`:''}" onclick="assignTo('${c.folio}',${ri})">${n.split(' ')[0]}</button>`
+    ).join('');
+    const geoTag = hasCoords
+      ? `<span style="font-size:10px;color:var(--g);margin-left:4px"><i class="ti ti-map-pin"></i></span>`
+      : `<span style="font-size:10px;color:var(--gray);margin-left:4px" title="Sin coordenadas"><i class="ti ti-map-pin-off"></i></span>`;
+    return `<div class="client-card">
+      <div class="client-card-head">
+        <div style="width:26px;height:26px;border-radius:50%;background:${bubbleBg};color:${bubbleColor};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;transition:background .2s">${asgn!==undefined?asgn+1:'?'}</div>
+        <div class="client-card-info">
+          <div class="cc-name" style="display:flex;align-items:center">${c.nombre}${geoTag}</div>
+          <div class="cc-addr"><i class="ti ti-map-pin" style="font-size:11px"></i> ${c.domicilio||'Sin dirección'}</div>
+          ${c.platillo?`<div class="cc-platillo"><i class="ti ti-tools-kitchen-2" style="font-size:11px"></i> ${c.platillo}</div>`:''}
+        </div>
+      </div>
+      <div class="rep-btns">${repBtns}</div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+function assignTo(folio, repIdx) {
+  assignments[folio] = repIdx;
+  renderClientList();
+  renderSummaryBar();
+  updateStatChips();
+}
+
+// ── SUMMARY BAR ──
+function renderSummaryBar() {
+  const counts = [0,0,0,0];
+  Object.values(assignments).forEach(ri => { if (ri>=0&&ri<4) counts[ri]++; });
+  document.getElementById('summaryBar').innerHTML = repNames.map((n,i) =>
+    `<div class="summary-chip${counts[i]>0?' has-items':''}">
+      <div class="summary-chip-name">${n.split(' ')[0]}</div>
+      <div class="summary-chip-count">${counts[i]}</div>
+    </div>`
+  ).join('');
+}
+
+// ── AUTO DISTRIBUTE ──
+function autoDistribute() {
+  clients.forEach((c,i) => { assignments[c.folio] = i % repCount; });
+  renderClientList();
+  renderSummaryBar();
+  showToast('Distribuidos equitativamente ✓');
+}
+
+// ── SAVE ROUTES ──
+async function saveRoutes() {
+  const unassigned = clients.filter(c => assignments[c.folio] === undefined);
+  if (unassigned.length > 0) {
+    showToast(`${unassigned.length} cliente(s) sin asignar`);
+    return;
+  }
+  const btn = document.getElementById('btnSave');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0 auto"></div>';
+  try {
+    const rutas = repNames.map((n,ri) => ({
+      rep: repSlug(n),
+      clientes: clients.filter(c => assignments[c.folio]===ri)
+    }));
+
+    // 1. Guardar en Apps Script → Google Sheets (respaldo + historial)
+    const res  = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: new URLSearchParams({ payload: JSON.stringify({ action:'guardar_rutas', rutas }) })
+    });
+    const data = await res.json().catch(() => null);
+    if (!data || !data.ok) {
+      showToast('Error al guardar: ' + (data?.error || 'sin respuesta del servidor'));
+      return;
+    }
+
+    // 2. Guardar en Firestore → tiempo real para ruta.html y monitor
+    const fecha = new Date().toLocaleDateString('en-CA');
+    const batch = db.batch();
+
+    // Borrar documentos del día que ya no corresponden a ningún rep activo
+    const repSlugsActivos = new Set(rutas.map(r => r.rep));
+    const docsHoy = await db.collection('rutas').where('fecha', '==', fecha).get();
+    docsHoy.forEach(doc => {
+      if (!repSlugsActivos.has(doc.data().rep)) batch.delete(doc.ref);
+    });
+
+    // Crear/sobreescribir documentos de los reps actuales
+    rutas.forEach(ruta => {
+      if (!ruta.clientes.length) return;
+      const docId = `${fecha}_${ruta.rep}`;
+      const ref   = db.collection('rutas').doc(docId);
+      batch.set(ref, {
+        fecha,
+        rep:        ruta.rep,
+        horaInicio: null,
+        clientes:   ruta.clientes.map((c, idx) => ({
+          orden:       idx,
+          folio:       c.folio       || '',
+          nombre:      c.nombre      || '',
+          domicilio:   c.domicilio   || '',
+          referencias: c.referencias || '',
+          tel:         c.tel         || '',
+          notas:       c.notas       || '',
+          platillo:    c.platillo    || '',
+          estado:      'Pendiente',
+          horaEntrega: ''
+        }))
+      });
+    });
+    await batch.commit();
+
+    showLinksPanel();
+    showToast('Rutas guardadas ✓');
+  } catch(e) {
+    showToast('Error al guardar. Intenta de nuevo.');
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar rutas y generar links';
+  }
+}
+
+// ── LINKS PANEL ──
+function showLinksPanel() {
+  const panel = document.getElementById('linksPanel');
+  const counts = [0,0,0,0];
+  Object.values(assignments).forEach(ri => { if(ri>=0&&ri<4) counts[ri]++; });
+  panel.style.display = 'block';
+  panel.innerHTML = `<h3><i class="ti ti-link"></i> Links para repartidores</h3>` +
+    repNames.map((n,i) => {
+      if (counts[i]===0) return '';
+      const link = repLink(i);
+      const waMsg = encodeURIComponent(`Hola ${n.split(' ')[0]}! 🛵 Aquí está tu ruta de hoy (${counts[i]} entregas):\n${link}`);
+      return `<div class="link-row">
+        <span class="link-row-name">${n.split(' ')[0]}</span>
+        <span class="link-url">${link}</span>
+        <button class="btn-copy" onclick="copyLink('${link}',this)"><i class="ti ti-copy"></i></button>
+        <a class="btn-wa-link" href="https://wa.me/?text=${waMsg}" target="_blank"><i class="ti ti-brand-whatsapp"></i></a>
+      </div>`;
+    }).join('');
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function copyLink(url, btn) {
+  navigator.clipboard.writeText(url).then(() => {
+    btn.innerHTML = '<i class="ti ti-check"></i>';
+    setTimeout(() => { btn.innerHTML = '<i class="ti ti-copy"></i>'; }, 1500);
+  });
+}
+
+// ── MONITOR ──
+// Fallback: solo se usa si Firestore falla
+async function loadMonitor() {
+  try {
+    const res = await fetch(`${SCRIPT_URL}?action=monitor`);
+    const data = await res.json();
+    const now = new Date();
+    document.getElementById('lastUpdate').textContent =
+      String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+    renderMonitor(data.reps || []);
+  } catch(e) {}
+}
+
+function renderMonitor(reps) {
+  const el = document.getElementById('monitorContent');
+  if (reps.length===0) {
+    el.innerHTML = `<div class="empty-monitor"><i class="ti ti-chart-bar"></i><p>No hay rutas configuradas para hoy</p></div>`;
+    return;
+  }
+  const nowMin = new Date().getHours()*60+new Date().getMinutes();
+  const grid = document.createElement('div');
+  grid.className = 'rep-cards-grid';
+
+  reps.forEach(r => {
+    const pct = r.total>0 ? Math.round(r.entregados/r.total*100) : 0;
+    const estTotal = r.total * MIN_POR_ENTREGA;
+    const startMin = timeStrToMin(r.hora_inicio);
+    const elapsed = startMin ? nowMin - startMin : null;
+    const estRemaining = (r.total - r.entregados) * MIN_POR_ENTREGA;
+
+    let statusClass='st-none', statusTxt='Sin iniciar';
+    if (r.entregados===r.total && r.total>0) { statusClass='st-done'; statusTxt='Completado'; }
+    else if (r.hora_inicio) { statusClass='st-active'; statusTxt='En ruta'; }
+
+    let timeHtml = `<div class="rc-time-row"><i class="ti ti-clock" style="font-size:11px"></i>Est. total: ${fmtMin(estTotal)}</div>`;
+    if (elapsed !== null) {
+      const realPct   = Math.min(Math.round(elapsed / estTotal * 100), 100);
+      const isLate    = elapsed > estTotal;
+      const isDone    = r.entregados === r.total && r.total > 0;
+      const barColor  = isDone ? 'var(--g)' : isLate ? '#F59E0B' : 'var(--g)';
+      const delta     = elapsed - estTotal;
+      let deltaBadge  = '';
+      if (isLate && !isDone) {
+        deltaBadge = `<span class="tc-badge" style="background:#FEF3C7;color:#92400E"><i class="ti ti-alert-triangle" style="font-size:10px"></i> ${fmtMin(delta)} de retraso</span>`;
+      } else if (!isLate) {
+        deltaBadge = `<span class="tc-badge" style="background:var(--gl);color:var(--gd)"><i class="ti ti-circle-check" style="font-size:10px"></i> ${fmtMin(Math.abs(delta))} adelantado</span>`;
+      }
+      timeHtml = `
+        <div class="rc-time-row" style="margin-bottom:4px">
+          <i class="ti ti-clock" style="font-size:11px"></i> Inicio: <strong>${r.hora_inicio}</strong>
+        </div>
+        <div class="tc-wrap">
+          <div class="tc-row">
+            <span class="tc-label">Estimado</span>
+            <div class="tc-bar-wrap"><div class="tc-bar" style="width:100%;background:var(--borde)"></div></div>
+            <span class="tc-val">${fmtMin(estTotal)}</span>
+          </div>
+          <div class="tc-row">
+            <span class="tc-label">Real</span>
+            <div class="tc-bar-wrap"><div class="tc-bar" style="width:${realPct}%;background:${barColor}"></div></div>
+            <span class="tc-val" style="color:${isLate?'#F59E0B':'var(--gd)'}">${fmtMin(elapsed)}</span>
+          </div>
+          <div class="tc-delta">${deltaBadge}</div>
+        </div>`;
+    }
+
+    const isExpanded = expandedRep === r.nombre;
+    const card = document.createElement('div');
+    card.className = 'rep-card' + (isExpanded?' expanded':'');
+    card.onclick = () => { expandedRep = isExpanded ? null : r.nombre; renderMonitor(reps); };
+    card.innerHTML = `
+      <div class="rc-name">${r.nombre.charAt(0).toUpperCase()+r.nombre.slice(1)}</div>
+      <div class="rc-prog"><div class="rc-prog-fill" style="width:${pct}%"></div></div>
+      <div class="rc-counts">
+        <div>
+          <span class="rc-delivered">${r.entregados}</span>
+          <div class="rc-total">de ${r.total} entregas</div>
+        </div>
+        <span class="rc-status ${statusClass}">${statusTxt}</span>
+      </div>
+      <div class="rc-time">${timeHtml}</div>`;
+    grid.appendChild(card);
+
+    // Detail panel
+    if (isExpanded) {
+      const detail = document.createElement('div');
+      detail.className = 'detail-wrap open';
+      detail.style.gridColumn = 'span 2';
+      detail.innerHTML = (r.clientes||[]).map((c,i) => {
+        const done = c.estado==='Entregado';
+        return `<div class="detail-row">
+          <div class="detail-num ${done?'dn-done':'dn-pend'}">${done?'<i class="ti ti-check" style="font-size:10px"></i>':(i+1)}</div>
+          <div class="detail-info">
+            <div class="di-name">${c.nombre}</div>
+            <div class="di-hora">${done?'Entregado '+c.hora_entrega:c.domicilio}</div>
+          </div>
+        </div>`;
+      }).join('');
+      // Insert after current row in grid — easier to append and use colspan
+      grid.appendChild(detail);
+    }
+  });
+
+  el.innerHTML = '';
+  el.appendChild(grid);
+}
+
+// ── GEOCODING (Nominatim / OpenStreetMap) ──
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+async function geocodeAddress(folio, domicilio) {
+  const cache = JSON.parse(localStorage.getItem('rcGeoCache')||'{}');
+  if (cache[folio]) return cache[folio];
+  const q = encodeURIComponent(domicilio + ', Colima, Mexico');
+  try {
+    const res  = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&limit=1`, {
+      headers: { 'Accept-Language': 'es' }
+    });
+    const data = await res.json();
+    if (data.length > 0) {
+      const coords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      cache[folio] = coords;
+      localStorage.setItem('rcGeoCache', JSON.stringify(cache));
+      return coords;
+    }
+  } catch(e) {}
+  return null;
+}
+
+async function geocodeAllClients(onProgress) {
+  const cache   = JSON.parse(localStorage.getItem('rcGeoCache')||'{}');
+  const pending = clients.filter(c => !cache[c.folio]);
+  for (let i = 0; i < pending.length; i++) {
+    await geocodeAddress(pending[i].folio, pending[i].domicilio);
+    onProgress(i + 1, pending.length);
+    if (i < pending.length - 1) await sleep(1100);
+  }
+}
+
+// ── K-MEANS CLUSTERING ──
+function haversine(a, b) {
+  const R = 6371, toRad = x => x * Math.PI / 180;
+  const dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
+  const h = Math.sin(dLat/2)**2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1-h));
+}
+
+function kMeans(points, k) {
+  const valid = points.filter(p => p.coords);
+  if (valid.length < k) return null;
+
+  let best = null, bestScore = Infinity;
+
+  for (let run = 0; run < 8; run++) {
+    // Random initialization from data points
+    let centroids = valid.slice().sort(() => Math.random() - .5).slice(0, k).map(p => ({...p.coords}));
+    let assign    = new Array(valid.length).fill(0);
+
+    for (let iter = 0; iter < 60; iter++) {
+      let changed = false;
+      valid.forEach((p, i) => {
+        let minD = Infinity, best = 0;
+        centroids.forEach((c, ki) => { const d = haversine(p.coords, c); if (d < minD){ minD = d; best = ki; } });
+        if (assign[i] !== best){ assign[i] = best; changed = true; }
+      });
+      if (!changed) break;
+      centroids = centroids.map((_, ki) => {
+        const grp = valid.filter((_,i) => assign[i]===ki);
+        if (!grp.length) return centroids[ki];
+        return { lat: grp.reduce((s,p) => s+p.coords.lat, 0)/grp.length,
+                 lng: grp.reduce((s,p) => s+p.coords.lng, 0)/grp.length };
+      });
+    }
+
+    // Score = total intra-cluster distance (lower = better)
+    const score = valid.reduce((s,p,i) => s + haversine(p.coords, centroids[assign[i]]), 0);
+    if (score < bestScore){ bestScore = score; best = { assign, centroids }; }
+  }
+
+  const map = new Map();
+  valid.forEach((p, i) => map.set(p.folio, best.assign[i]));
+  return map;
+}
+
+// ── AUTO-GROUP BY PROXIMITY ──
+async function autoGroupByProximity() {
+  const progEl  = document.getElementById('geoProgress');
+  const progTxt = document.getElementById('geoProgressText');
+  progEl.style.display = 'flex';
+
+  // Step 1: Geocode
+  const cache   = JSON.parse(localStorage.getItem('rcGeoCache')||'{}');
+  const pending = clients.filter(c => !cache[c.folio]).length;
+  if (pending > 0) {
+    await geocodeAllClients((done, total) => {
+      progTxt.textContent = `Obteniendo coordenadas… ${done} / ${total}`;
+    });
+  }
+
+  // Step 2: Cluster
+  progTxt.textContent = 'Agrupando por zona…';
+  const updatedCache = JSON.parse(localStorage.getItem('rcGeoCache')||'{}');
+  const withCoords   = clients.map(c => ({ ...c, coords: updatedCache[c.folio]||null }));
+  const assignMap    = kMeans(withCoords, repCount);
+
+  progEl.style.display = 'none';
+
+  // Asignar clientes con coordenadas (resultado de kMeans)
+  const sinCoords = [];
+  clients.forEach(c => {
+    const cluster = assignMap ? assignMap.get(c.folio) : undefined;
+    if (cluster !== undefined) {
+      assignments[c.folio] = cluster;
+    } else {
+      sinCoords.push(c); // sin coordenadas → distribuir después
+    }
+  });
+
+  // Distribuir clientes sin coordenadas equitativamente
+  sinCoords.forEach((c, i) => {
+    assignments[c.folio] = i % repCount;
+  });
+
+  renderClientList();
+  renderSummaryBar();
+  const geocodedCount = clients.length - sinCoords.length;
+  showToast(`${geocodedCount} por cercanía · ${sinCoords.length} distribuidos ✓`);
+}
+
+// ── INIT ──
+function initWeekDates() {
+  const today  = new Date();
+  const dow    = today.getDay();
+  const diff   = dow === 0 ? -6 : 1 - dow;
+  const base   = new Date(today);
+  base.setDate(today.getDate() + diff);
+
+  // Igual que el landing: jue(4) y vie(5) muestran la semana siguiente
+  const offset = (dow === 5 || dow === 6 || dow === 0) ? 7 : 0;
+  const monday = new Date(base);
+  monday.setDate(base.getDate() + offset);
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
+
+  const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const monTxt = monday.getDate() + ' ' + MESES[monday.getMonth()];
+  const friTxt = friday.getDate()  + ' ' + MESES[friday.getMonth()];
+  document.getElementById('weekLabel').textContent = 'Semana ' + monTxt + ' · ' + friTxt;
+
+  // Solo texto del día, sin número
+  const DIAS_CHIP = ['Lun','Mar','Mié','Jue','Vie'];
+  const DIAS_ES   = ['lunes','martes','miercoles','jueves','viernes'];
+  DIAS_ES.forEach((dia, i) => {
+    const chip = document.querySelector(`.day-chip[data-dia="${dia}"]`);
+    if (chip) chip.textContent = DIAS_CHIP[i];
+  });
+}
+
+updateClock();
+setInterval(updateClock, 30000);
+initWeekDates();
+initMotivMsg();
+updateStatChips();
+updateCountdown();
+setInterval(updateCountdown, 60000);
+selectDia(currentDia);
+renderRepInputs();
+renderSummaryBar();
+</script>
+</body>
+</html>

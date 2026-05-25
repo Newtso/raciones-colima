@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Mi ruta — Raciones Colima</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<style>
+:root{--g:#45AC6C;--gl:#E8F7EE;--gd:#2D7A4A;--gray:#6B7280;--gray2:#F3F4F6;--borde:#E5E7EB;--txt:#111827}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0F4F3;min-height:100vh}
+.topbar{background:var(--g);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.topbar-l{display:flex;flex-direction:column}
+.topbar-title{color:#fff;font-size:15px;font-weight:700}
+.topbar-sub{color:rgba(255,255,255,.75);font-size:12px;margin-top:2px}
+.topbar-r{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.topbar-clock{color:#fff;font-size:28px;font-weight:200;font-variant-numeric:tabular-nums;letter-spacing:3px}
+.topbar-clock .clock-colon{animation:blink 1s step-start infinite}
+@keyframes blink{50%{opacity:.2}}
+.topbar-fecha{color:rgba(255,255,255,.7);font-size:11px}
+.prog-wrap{background:#fff;padding:12px 16px;border-bottom:1px solid var(--borde)}
+.prog-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.prog-label{font-size:13px;color:var(--gray)}
+.prog-count{font-size:13px;font-weight:700;color:var(--txt)}
+.prog-track{height:6px;background:var(--gray2);border-radius:3px}
+.prog-fill{height:6px;background:var(--g);border-radius:3px;transition:width .4s}
+.list{padding:12px 12px 100px;display:flex;flex-direction:column;gap:10px}
+.card{background:#fff;border-radius:14px;border:1.5px solid var(--borde);overflow:hidden;transition:opacity .3s}
+.card.active{border-color:var(--g);box-shadow:0 2px 12px rgba(144,165,160,.2)}
+.card.done{opacity:.5}
+.card.locked{opacity:.4}
+.card-head{display:flex;align-items:center;gap:10px;padding:12px 14px 10px}
+.bubble{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.bub-a{background:var(--gl);color:var(--gd)}
+.bub-l{background:#F3F4F6;color:#9CA3AF}
+.bub-d{background:var(--gl);color:var(--gd)}
+.card-info{flex:1;min-width:0}
+.cname{font-size:14px;font-weight:600;color:var(--txt)}
+.caddr{font-size:12px;color:var(--gray);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;flex-shrink:0}
+.bad-a{background:var(--gl);color:var(--gd)}
+.bad-l{background:#F3F4F6;color:var(--gray)}
+.bad-d{background:var(--gl);color:var(--gd)}
+.card-note{margin:0 14px 10px;padding:7px 10px;background:#FFF9EC;border-left:3px solid #F59E0B;border-radius:0 6px 6px 0;font-size:12px;color:#92400E;display:flex;align-items:flex-start;gap:6px;line-height:1.5}
+.card-platillo{margin:0 14px 10px;padding:6px 10px;background:var(--gray2);border-radius:6px;font-size:12px;color:var(--gray);display:flex;align-items:center;gap:6px}
+.card-acts{padding:0 14px 14px;display:flex;flex-direction:column;gap:8px}
+.btn-wa{display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:10px;background:var(--g);color:#fff;font-size:13px;font-weight:600;text-decoration:none;border:none;cursor:pointer;width:100%}
+.btn-done{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border-radius:10px;background:#fff;color:var(--txt);font-size:13px;border:1.5px solid var(--borde);cursor:pointer;width:100%}
+.btn-maps{display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:10px;background:#fff;color:var(--gd);font-size:13px;font-weight:600;text-decoration:none;border:2px solid var(--g);width:100%}
+.btn-done:active{background:var(--gray2)}
+.lock-info{display:flex;align-items:center;gap:6px;margin:0 14px 12px;padding:8px 10px;background:var(--gray2);border-radius:8px;font-size:12px;color:var(--gray)}
+.done-row{padding:0 14px 12px;font-size:12px;color:var(--g);display:flex;align-items:center;gap:5px}
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:12px;color:var(--gray)}
+.spinner{width:36px;height:36px;border:3px solid var(--gray2);border-top-color:var(--g);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:60px 24px;color:var(--gray)}
+.empty i{font-size:48px;color:var(--g);display:block;margin-bottom:12px}
+.empty h3{font-size:16px;font-weight:600;color:var(--txt);margin-bottom:6px}
+.all-done{text-align:center;padding:60px 24px}
+.all-done i{font-size:60px;color:var(--g);display:block;margin-bottom:12px}
+.all-done h2{font-size:20px;font-weight:700;color:var(--txt);margin-bottom:6px}
+.all-done p{font-size:14px;color:var(--gray)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+.toast.toast--error{background:#DC2626}
+.toast.toast--warn{background:#D97706}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-l">
+    <span class="topbar-title" id="repTitle">Cargando ruta…</span>
+    <span class="topbar-sub" id="repSub">Raciones Colima</span>
+  </div>
+  <div class="topbar-r">
+    <span class="topbar-clock"><span id="clockHH">--</span><span class="clock-colon">:</span><span id="clockMM">--</span></span>
+    <span class="topbar-fecha" id="topFecha"></span>
+  </div>
+</div>
+
+<div id="progWrap" class="prog-wrap" style="display:none">
+  <div class="prog-row">
+    <span class="prog-label">Progreso del día</span>
+    <span class="prog-count" id="progCount">0 / 0</span>
+  </div>
+  <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+</div>
+
+<div id="mainContent">
+  <div class="loading" id="loadingState">
+    <div class="spinner"></div>
+    <span>Cargando tu ruta…</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Firebase ──
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.firestore();
+
+const EMPRESA = 'Raciones Colima';
+const params  = new URLSearchParams(location.search);
+const REP     = (params.get('rep') || '').trim();
+const _hoy    = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD en hora local
+
+let route          = [];
+let delivered      = 0;
+let notified       = 0;
+let rutaUnsub      = null;
+let localEntregados = {}; // {idx: horaEntrega} marcados localmente, pendientes de confirmar
+
+// ── Helpers ──
+function fn(n) { return (n || '').split(' ')[0]; }
+function fmtTel(t) { const s = String(t).replace(/\D/g,''); return s.length === 10 ? '52'+s : s; }
+function waLink(tel, msg) { return `https://wa.me/${fmtTel(tel)}?text=${encodeURIComponent(msg)}`; }
+function mapsLink(addr) {
+  const q = encodeURIComponent(addr + ', Colima, México');
+  return `https://www.google.com/maps/search/?api=1&query=${q}`;
+}
+function arrivedMsg(c) {
+  return `Hola ${fn(c.nombre)}! 🛵 Soy el repartidor de *${EMPRESA}*, ya llegué a tu domicilio en *${c.domicilio}*. ¡Por favor pasa a recibirlo!`;
+}
+
+// ── Reloj ──
+function updateClock() {
+  const n = new Date();
+  document.getElementById('clockHH').textContent = String(n.getHours()).padStart(2,'0');
+  document.getElementById('clockMM').textContent = String(n.getMinutes()).padStart(2,'0');
+  document.getElementById('topFecha').textContent = n.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
+}
+updateClock();
+setInterval(updateClock, 30000);
+
+// ── Toast ──
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('toast--error','toast--warn');
+  if (type) t.classList.add('toast--'+type);
+  t.classList.add('show');
+  setTimeout(() => { t.classList.remove('show','toast--error','toast--warn'); }, type === 'error' ? 4000 : 2500);
+}
+
+// ── Error pantalla ──
+function showError(msg) {
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('mainContent').innerHTML =
+    `<div class="empty"><i class="ti ti-alert-circle"></i><h3>Error</h3><p>${msg}</p>
+     <button onclick="loadRoute()" style="margin-top:14px;padding:10px 20px;background:#45AC6C;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;">↺ Reintentar</button>
+    </div>`;
+}
+
+// ── Cargar ruta con listener en tiempo real ──
+function loadRoute() {
+  if (!REP) { showError('Falta el nombre del repartidor en el URL (ej. ?rep=carlos)'); return; }
+
+  if (rutaUnsub) rutaUnsub(); // cancelar listener previo
+
+  const docId = `${_hoy}_${REP.toLowerCase()}`;
+
+  rutaUnsub = db.collection('rutas').doc(docId).onSnapshot(snap => {
+    if (!snap.exists) {
+      route     = [];
+      delivered = 0;
+      render();
+      return;
+    }
+    const data = snap.data();
+    // Merge: preservar entregas marcadas localmente que el servidor aún no confirmó
+    route = (data.clientes || []).map((c, i) => {
+      if (localEntregados[i] && c.estado !== 'Entregado') {
+        return { ...c, estado: 'Entregado', horaEntrega: localEntregados[i] };
+      }
+      if (c.estado === 'Entregado') delete localEntregados[i]; // servidor confirmó
+      return c;
+    });
+    delivered = route.filter(c => c.estado === 'Entregado').length;
+    render();
+  }, () => {
+    if (route.length === 0) showError('No se pudo conectar. Verifica tu conexión.');
+  });
+}
+
+// ── Marcar entregado → escribe en Firestore ──
+async function markDelivered(idx) {
+  const c = route[idx];
+  if (!c || c.estado === 'Entregado' || localEntregados[idx]) return;
+
+  const hora  = new Date().toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
+  const docId = `${_hoy}_${REP.toLowerCase()}`;
+
+  // Guardar localmente y actualizar UI inmediatamente
+  localEntregados[idx] = hora;
+  route[idx] = { ...c, estado: 'Entregado', horaEntrega: hora };
+  delivered  = route.filter(r => r.estado === 'Entregado').length;
+  render();
+  showToast('Entrega registrada ✓');
+
+  // Escribir en Firestore
+  try {
+    const snap     = await db.collection('rutas').doc(docId).get();
+    const clientes = (snap.data()?.clientes || []).map((cl, i) =>
+      i === idx ? { ...cl, estado: 'Entregado', horaEntrega: hora } : cl
+    );
+    const updates = { clientes };
+    if (!snap.data()?.horaInicio) updates.horaInicio = hora;
+    await db.collection('rutas').doc(docId).update(updates);
+    delete localEntregados[idx]; // servidor confirmó
+  } catch(e) {
+    showToast('⚠️ No se pudo confirmar en el servidor.', 'warn');
+  }
+}
+
+// ── Registrar notificación WhatsApp (solo local) ──
+function handleNotify(idx) {
+  if (idx >= notified) notified = idx + 1;
+}
+
+// ── Render ──
+function render() {
+  const total = route.length;
+  document.getElementById('repTitle').textContent = REP.charAt(0).toUpperCase()+REP.slice(1)+' — repartidor';
+  document.getElementById('repSub').textContent   = total + ' entregas hoy';
+
+  if (total === 0) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('mainContent').innerHTML = `
+      <div class="empty">
+        <i class="ti ti-package-off"></i>
+        <h3>Sin entregas asignadas</h3>
+        <p>El administrador aún no configuró tu ruta de hoy</p>
+      </div>`;
+    return;
+  }
+
+  const pct = Math.round(delivered / total * 100);
+  document.getElementById('progWrap').style.display  = 'block';
+  document.getElementById('progCount').textContent   = delivered + ' / ' + total;
+  document.getElementById('progFill').style.width    = pct + '%';
+  document.getElementById('loadingState').style.display = 'none';
+
+  if (delivered === total) {
+    document.getElementById('mainContent').innerHTML = `<div class="all-done"><i class="ti ti-circle-check-filled"></i><h2>¡Ruta completa!</h2><p>Todas las entregas del día fueron realizadas.</p></div>`;
+    return;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'list';
+
+  route.forEach((c, i) => {
+    const isDone   = c.estado === 'Entregado';
+    const isActive = !isDone && i === delivered;
+    const isNext   = !isDone && i === delivered + 1;
+    const isLocked = !isDone && i > delivered + 1;
+
+    const card = document.createElement('div');
+    card.className = 'card'+(isDone?' done':isActive?' active':isLocked?' locked':'');
+
+    const bub        = isDone ? 'bub-d' : isActive ? 'bub-a' : 'bub-l';
+    const bubContent = isDone ? '<i class="ti ti-check"></i>' : (i+1);
+    const bad        = isDone ? 'bad-d' : isActive ? 'bad-a' : 'bad-l';
+    const badTxt     = isDone ? 'Entregado' : isActive ? 'Activo' : 'En espera';
+
+    card.innerHTML = `<div class="card-head">
+      <div class="bubble ${bub}">${bubContent}</div>
+      <div class="card-info">
+        <div class="cname">${c.nombre}</div>
+        <a class="caddr" href="${mapsLink(c.domicilio)}" target="_blank" style="color:inherit;text-decoration:none;display:block;">
+          <i class="ti ti-map-pin" style="font-size:11px;color:var(--g)"></i> ${c.domicilio}
+          <span style="font-size:10px;color:var(--g);font-weight:600;margin-left:4px;">Ver en Maps ↗</span>
+        </a>
+      </div>
+      <span class="badge ${bad}">${badTxt}</span>
+    </div>`;
+
+    if (c.platillo && !isDone)
+      card.innerHTML += `<div class="card-platillo"><i class="ti ti-tools-kitchen-2"></i>${c.platillo}</div>`;
+
+    const numCasa = c.domicilio ? (c.domicilio.match(/No\.?\s*(\d+\s*[A-Za-z]?)/i) || [])[0] : null;
+    if ((c.referencias || numCasa) && !isDone)
+      card.innerHTML += `<div class="card-note" style="background:#F0F4FF;border-left-color:#6366F1;color:#3730A3"><i class="ti ti-home"></i>${numCasa ? `<strong>${numCasa}</strong>${c.referencias ? ' · ' : ''}` : ''}${c.referencias || ''}</div>`;
+
+    if (c.notas && !isDone)
+      card.innerHTML += `<div class="card-note"><i class="ti ti-info-circle"></i><span><strong>Cliente dice:</strong> ${c.notas}</span></div>`;
+
+    if (isActive) {
+      const msg = arrivedMsg(c);
+      card.innerHTML += `<div class="card-acts">
+        <a class="btn-maps" href="${mapsLink(c.domicilio)}" target="_blank">
+          <i class="ti ti-map-2"></i> Navegar con Google Maps
+        </a>
+        <a class="btn-wa" href="${waLink(c.tel, msg)}" onclick="handleNotify(${i})" target="_blank">
+          <i class="ti ti-brand-whatsapp"></i> Notificar a ${fn(c.nombre)} — llegué
+        </a>
+        <button class="btn-done" data-done-btn="${i}" onclick="markDelivered(${i})">
+          <i class="ti ti-check"></i> Marcar como entregado
+        </button>
+      </div>`;
+    } else if (isDone) {
+      card.innerHTML += `<div class="done-row"><i class="ti ti-circle-check-filled"></i> Entregado${c.horaEntrega ? ' · '+c.horaEntrega : ''}</div>`;
+    } else if (isNext) {
+      card.innerHTML += `<div class="lock-info"><i class="ti ti-clock"></i> Siguiente parada · ~15 min</div>`;
+    } else {
+      card.innerHTML += `<div class="lock-info"><i class="ti ti-lock"></i> Se desbloquea conforme avances</div>`;
+    }
+
+    list.appendChild(card);
+  });
+
+  const content = document.getElementById('mainContent');
+  content.innerHTML = '';
+  content.appendChild(list);
+}
+
+loadRoute();
+</script>
+</body>
+</html>
