@@ -1106,7 +1106,7 @@
     else if (dow === 1 && mins < LUNES_ABRE)
       aviso = 'El registro de esta semana abre hoy <strong>lunes a las 2:00 PM</strong>.';
     else if (dow === 1 && mins >= CIERRE)
-      aviso = 'El periodo de registro ya cerró. Regresa el <strong>próximo domingo</strong> para registrarte para la siguiente semana.';
+      aviso = 'El periodo de registro ya cerró. Regresa <strong>mañana martes a las 6:00 AM</strong> para registrarte.';
     else if (dow >= 2 && dow <= 4 && mins < DIA_ABRE)
       aviso = `El registro para esta semana abre hoy <strong>${DIAS_ES[dow-1]} a las 6:00 AM</strong>.`;
     else if (dow >= 2 && dow <= 4 && mins >= CIERRE)
