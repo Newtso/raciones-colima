@@ -193,6 +193,10 @@ async function markDelivered(idx) {
   const c = route[idx];
   if (!c || c.estado === 'Entregado' || localEntregados[idx]) return;
 
+  // Deshabilitar botón inmediatamente para evitar doble tap
+  const btn = document.querySelector(`[data-done-btn="${idx}"]`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Registrando…'; }
+
   const hora  = new Date().toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
   const docId = `${_hoy}_${REP.toLowerCase()}`;
 
@@ -214,7 +218,12 @@ async function markDelivered(idx) {
     await db.collection('rutas').doc(docId).update(updates);
     delete localEntregados[idx]; // servidor confirmó
   } catch(e) {
-    showToast('⚠️ No se pudo confirmar en el servidor.', 'warn');
+    // Revertir estado local si falla el servidor
+    delete localEntregados[idx];
+    route[idx] = { ...c };
+    delivered  = route.filter(r => r.estado === 'Entregado').length;
+    render();
+    showToast('⚠️ No se pudo confirmar. Intenta de nuevo.', 'warn');
   }
 }
 
@@ -228,9 +237,9 @@ function render() {
   const total = route.length;
   document.getElementById('repTitle').textContent = REP.charAt(0).toUpperCase()+REP.slice(1)+' — repartidor';
   document.getElementById('repSub').textContent   = total + ' entregas hoy';
+  document.getElementById('loadingState').style.display = 'none';
 
   if (total === 0) {
-    document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').innerHTML = `
       <div class="empty">
         <i class="ti ti-package-off"></i>
@@ -244,21 +253,25 @@ function render() {
   document.getElementById('progWrap').style.display  = 'block';
   document.getElementById('progCount').textContent   = delivered + ' / ' + total;
   document.getElementById('progFill').style.width    = pct + '%';
-  document.getElementById('loadingState').style.display = 'none';
 
   if (delivered === total) {
     document.getElementById('mainContent').innerHTML = `<div class="all-done"><i class="ti ti-circle-check-filled"></i><h2>¡Ruta completa!</h2><p>Todas las entregas del día fueron realizadas.</p></div>`;
     return;
   }
 
+  // Índice del primer cliente no entregado → más robusto que usar delivered como índice
+  const firstPending = route.findIndex(c => c.estado !== 'Entregado');
+
   const list = document.createElement('div');
   list.className = 'list';
 
   route.forEach((c, i) => {
+    const nombre   = c.nombre   || 'Sin nombre';
+    const domicilio= c.domicilio|| 'Sin dirección';
     const isDone   = c.estado === 'Entregado';
-    const isActive = !isDone && i === delivered;
-    const isNext   = !isDone && i === delivered + 1;
-    const isLocked = !isDone && i > delivered + 1;
+    const isActive = !isDone && i === firstPending;
+    const isNext   = !isDone && i === firstPending + 1;
+    const isLocked = !isDone && i > firstPending + 1;
 
     const card = document.createElement('div');
     card.className = 'card'+(isDone?' done':isActive?' active':isLocked?' locked':'');
@@ -271,9 +284,9 @@ function render() {
     card.innerHTML = `<div class="card-head">
       <div class="bubble ${bub}">${bubContent}</div>
       <div class="card-info">
-        <div class="cname">${c.nombre}</div>
-        <a class="caddr" href="${mapsLink(c.domicilio)}" target="_blank" style="color:inherit;text-decoration:none;display:block;">
-          <i class="ti ti-map-pin" style="font-size:11px;color:var(--g)"></i> ${c.domicilio}
+        <div class="cname">${nombre}</div>
+        <a class="caddr" href="${mapsLink(domicilio)}" target="_blank" style="color:inherit;text-decoration:none;display:block;">
+          <i class="ti ti-map-pin" style="font-size:11px;color:var(--g)"></i> ${domicilio}
           <span style="font-size:10px;color:var(--g);font-weight:600;margin-left:4px;">Ver en Maps ↗</span>
         </a>
       </div>
@@ -283,7 +296,7 @@ function render() {
     if (c.platillo && !isDone)
       card.innerHTML += `<div class="card-platillo"><i class="ti ti-tools-kitchen-2"></i>${c.platillo}</div>`;
 
-    const numCasa = c.domicilio ? (c.domicilio.match(/No\.?\s*(\d+\s*[A-Za-z]?)/i) || [])[0] : null;
+    const numCasa = domicilio ? (domicilio.match(/No\.?\s*(\d+\s*[A-Za-z]?)/i) || [])[0] : null;
     if ((c.referencias || numCasa) && !isDone)
       card.innerHTML += `<div class="card-note" style="background:#F0F4FF;border-left-color:#6366F1;color:#3730A3"><i class="ti ti-home"></i>${numCasa ? `<strong>${numCasa}</strong>${c.referencias ? ' · ' : ''}` : ''}${c.referencias || ''}</div>`;
 
@@ -293,11 +306,11 @@ function render() {
     if (isActive) {
       const msg = arrivedMsg(c);
       card.innerHTML += `<div class="card-acts">
-        <a class="btn-maps" href="${mapsLink(c.domicilio)}" target="_blank">
+        <a class="btn-maps" href="${mapsLink(domicilio)}" target="_blank">
           <i class="ti ti-map-2"></i> Navegar con Google Maps
         </a>
-        <a class="btn-wa" href="${waLink(c.tel, msg)}" onclick="handleNotify(${i})" target="_blank">
-          <i class="ti ti-brand-whatsapp"></i> Notificar a ${fn(c.nombre)} — llegué
+        <a class="btn-wa" href="${waLink(c.tel||'', msg)}" onclick="handleNotify(${i})" target="_blank">
+          <i class="ti ti-brand-whatsapp"></i> Notificar a ${fn(nombre)} — llegué
         </a>
         <button class="btn-done" data-done-btn="${i}" onclick="markDelivered(${i})">
           <i class="ti ti-check"></i> Marcar como entregado
