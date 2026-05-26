@@ -1102,19 +1102,21 @@
     const DIAS_ES = ['lunes','martes','miércoles','jueves','viernes'];
     let aviso = '';
     if (dow === 0 && mins >= CIERRE)
-      aviso = 'El periodo de registro para esta semana ya cerró. Puedes registrarte para la próxima semana.';
+      aviso = 'El periodo de registro ya cerró. Regresa el <strong>lunes a las 2:00 PM</strong> para registrarte.';
     else if (dow === 1 && mins < LUNES_ABRE)
-      aviso = 'El registro para esta semana abre hoy lunes a las 2:00 PM.';
+      aviso = 'El registro de esta semana abre hoy <strong>lunes a las 2:00 PM</strong>.';
     else if (dow === 1 && mins >= CIERRE)
-      aviso = 'El periodo de registro para esta semana ya cerró. Puedes registrarte para la próxima semana.';
+      aviso = 'El periodo de registro ya cerró. Regresa el <strong>próximo domingo</strong> para registrarte para la siguiente semana.';
     else if (dow >= 2 && dow <= 4 && mins < DIA_ABRE)
-      aviso = `El registro para esta semana abre hoy ${DIAS_ES[dow-1]} a las 6:00 AM.`;
+      aviso = `El registro para esta semana abre hoy <strong>${DIAS_ES[dow-1]} a las 6:00 AM</strong>.`;
     else if (dow >= 2 && dow <= 4 && mins >= CIERRE)
-      aviso = `Solo puedes registrar del ${DIAS_ES[firstIdx === 5 ? 4 : firstIdx]} al viernes esta semana.`;
+      aviso = `El periodo de registro cerró. Solo quedan disponibles del <strong>${DIAS_ES[firstIdx === 5 ? 4 : firstIdx]} al viernes</strong> de la próxima semana.`;
     else if (dow === 5)
-      aviso = 'El periodo de registro para esta semana ya cerró. Puedes registrarte para la próxima semana.';
+      aviso = 'El periodo de registro ya cerró. Regresa el <strong>domingo</strong> para registrarte para la próxima semana.';
+    else if (dow === 6)
+      aviso = 'Puedes registrarte para la <strong>próxima semana</strong>. ¡El registro está abierto!';
     else if (firstIdx > 0 && firstIdx < 5)
-      aviso = `Solo puedes registrar del ${DIAS_ES[firstIdx]} al viernes esta semana.`;
+      aviso = `Solo puedes registrar del <strong>${DIAS_ES[firstIdx]} al viernes</strong> esta semana.`;
 
     // Lunes de "esta semana". Si es jue/vie, adelantar una semana para mostrar
     // los menús correctos (ACTUAL = semana entrante, SIGUIENTE = la que sigue).
