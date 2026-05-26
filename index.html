@@ -1576,6 +1576,17 @@ function cnConfirmar() {
   var actividad = document.getElementById('cn-actividad').value;
   var fechaTxt  = CN_DIAS[cnFechaSel.getDay()].charAt(0).toUpperCase() + CN_DIAS[cnFechaSel.getDay()].slice(1) + ', ' + cnFechaSel.getDate() + ' de ' + CN_MESES_MIN[cnFechaSel.getMonth()] + ' de ' + cnFechaSel.getFullYear();
 
+  // Calcular edad a partir de fecha de nacimiento
+  var edadAnios = '';
+  if (edad.length === 10) {
+    var partes = edad.split('/');
+    var nac = new Date(parseInt(partes[2]), parseInt(partes[1]) - 1, parseInt(partes[0]));
+    var hoy = new Date();
+    var a = hoy.getFullYear() - nac.getFullYear();
+    if (hoy < new Date(hoy.getFullYear(), parseInt(partes[1]) - 1, parseInt(partes[0]))) a--;
+    edadAnios = ' (' + a + ' años)';
+  }
+
   // Enviar a Google Sheets
   var payload = JSON.stringify({
     action: 'consulta',
@@ -1590,7 +1601,7 @@ function cnConfirmar() {
   }).catch(function(){});
 
   // Mensaje WhatsApp
-  var msg = 'Hola Valeria, me gustaría agendar una consulta nutricional.\n\n📋 *Mis datos:*\n• Nombre: ' + nombre + '\n• Teléfono: ' + tel + '\n• Sexo: ' + sexo + '\n• Fecha de nacimiento: ' + edad + '\n• Ocupación: ' + ocupacion + '\n• Actividad física: ' + actividad + '\n\n📅 *Fecha solicitada:* ' + fechaTxt + '\n🕟 *Hora:* ' + cnHorarioSel + ' (sesión de 40 min)\n\n¡Quedo pendiente de confirmación!';
+  var msg = 'Hola Valeria, me gustaría agendar una consulta nutricional.\n\n📋 *Mis datos:*\n• Nombre: ' + nombre + '\n• Teléfono: ' + tel + '\n• Sexo: ' + sexo + '\n• Fecha de nacimiento: ' + edad + edadAnios + '\n• Ocupación: ' + ocupacion + '\n• Actividad física: ' + actividad + '\n\n📅 *Fecha solicitada:* ' + fechaTxt + '\n🕟 *Hora:* ' + cnHorarioSel + ' (sesión de 40 min)\n\n¡Quedo pendiente de confirmación!';
   document.getElementById('cn-wa-link').href = 'https://wa.me/523121182738?text=' + encodeURIComponent(msg);
 
   // Llenar banner de confirmación
