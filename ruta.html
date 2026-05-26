@@ -110,11 +110,12 @@ const params  = new URLSearchParams(location.search);
 const REP     = (params.get('rep') || '').trim();
 const _hoy    = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD en hora local
 
-let route          = [];
-let delivered      = 0;
-let notified       = 0;
-let rutaUnsub      = null;
+let route           = [];
+let delivered       = 0;
+let notified        = 0;
+let rutaUnsub       = null;
 let localEntregados = {}; // {idx: horaEntrega} marcados localmente, pendientes de confirmar
+let rutaHoraInicio  = null; // primera hora de entrega del día
 
 // ── Helpers ──
 function fn(n) { return (n || '').split(' ')[0]; }
@@ -173,6 +174,7 @@ function loadRoute() {
       return;
     }
     const data = snap.data();
+    rutaHoraInicio = data.horaInicio || null;
     // Merge: preservar entregas marcadas localmente que el servidor aún no confirmó
     route = (data.clientes || []).map((c, i) => {
       if (localEntregados[i] && c.estado !== 'Entregado') {
@@ -200,30 +202,32 @@ async function markDelivered(idx) {
   const hora  = new Date().toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
   const docId = `${_hoy}_${REP.toLowerCase()}`;
 
-  // Guardar localmente y actualizar UI inmediatamente
+  // Actualizar estado local ANTES del write para UI instantánea
   localEntregados[idx] = hora;
   route[idx] = { ...c, estado: 'Entregado', horaEntrega: hora };
   delivered  = route.filter(r => r.estado === 'Entregado').length;
   render();
   showToast('Entrega registrada ✓');
 
-  // Escribir en Firestore
+  // Escribir en Firestore — usar route local, sin get() extra
   try {
-    const snap     = await db.collection('rutas').doc(docId).get();
-    const clientes = (snap.data()?.clientes || []).map((cl, i) =>
-      i === idx ? { ...cl, estado: 'Entregado', horaEntrega: hora } : cl
-    );
-    const updates = { clientes };
-    if (!snap.data()?.horaInicio) updates.horaInicio = hora;
+    const clientesActualizados = route.map(cl => Object.assign({}, cl));
+    const updates = { clientes: clientesActualizados };
+    if (!rutaHoraInicio) { updates.horaInicio = hora; rutaHoraInicio = hora; }
     await db.collection('rutas').doc(docId).update(updates);
     delete localEntregados[idx]; // servidor confirmó
   } catch(e) {
-    // Revertir estado local si falla el servidor
+    // Log detallado en consola para debugging
+    console.error('[markDelivered] idx=' + idx + ' doc=' + docId, e.code, e.message, e);
+    // Revertir estado local
     delete localEntregados[idx];
     route[idx] = { ...c };
     delivered  = route.filter(r => r.estado === 'Entregado').length;
     render();
-    showToast('⚠️ No se pudo confirmar. Intenta de nuevo.', 'warn');
+    const errMsg = e.code === 'permission-denied'
+      ? 'Sin permiso de escritura. Revisa reglas de Firestore.'
+      : (e.code || e.message || 'sin conexión');
+    showToast('⚠️ Error: ' + errMsg, 'error');
   }
 }
 
