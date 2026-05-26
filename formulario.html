@@ -1101,26 +1101,27 @@
     // Texto de aviso según situación
     const DIAS_ES = ['lunes','martes','miércoles','jueves','viernes'];
     let aviso = '';
+    const RECORDATORIO = ' Recuerda que también puedes comenzar a planificar tus platillos de la próxima semana.';
     if (dow === 0 && mins >= CIERRE)
-      aviso = 'El periodo de registro ya cerró. Regresa el <strong>lunes a partir de las 2:00 PM</strong> para registrarte.';
+      aviso = 'El periodo de registro ya cerró. Regresa el <strong>lunes a partir de las 2:00 PM</strong> para registrarte.' + RECORDATORIO;
     else if (dow === 1 && mins < LUNES_ABRE)
-      aviso = 'El registro de esta semana abre hoy <strong>a partir de las 2:00 PM</strong>.';
+      aviso = 'El registro de esta semana abre hoy <strong>a partir de las 2:00 PM</strong>.' + RECORDATORIO;
     else if (dow === 1 && mins >= CIERRE)
-      aviso = 'El periodo de registro ya cerró. Regresa <strong>mañana martes a partir de las 6:00 AM</strong> para registrarte.';
+      aviso = 'El periodo de registro ya cerró. Regresa <strong>mañana martes a partir de las 6:00 AM</strong> para registrarte.' + RECORDATORIO;
     else if (dow >= 2 && dow <= 4 && mins < DIA_ABRE)
-      aviso = `El registro para esta semana abre hoy <strong>a partir de las 6:00 AM</strong>.`;
+      aviso = `El registro para esta semana abre hoy <strong>a partir de las 6:00 AM</strong>.` + RECORDATORIO;
     else if (dow >= 2 && dow <= 4 && mins >= CIERRE) {
       const proximoDia = dow === 4
         ? 'el <strong>sábado a partir de las 6:00 AM</strong>'
         : `mañana <strong>${DIAS_ES[dow - 1]} a partir de las 6:00 AM</strong>`;
-      aviso = `El periodo de registro cerró. Regresa ${proximoDia} para registrarte.`;
+      aviso = `El periodo de registro cerró. Regresa ${proximoDia} para registrarte.` + RECORDATORIO;
     }
     else if (dow === 5)
-      aviso = 'El periodo de registro ya cerró. Regresa el <strong>sábado a partir de las 6:00 AM</strong> para registrarte para la próxima semana.';
+      aviso = 'El periodo de registro ya cerró. Regresa el <strong>sábado a partir de las 6:00 AM</strong> para registrarte para la próxima semana.' + RECORDATORIO;
     else if (dow === 6)
       aviso = '¡El registro está abierto! Puedes registrarte para la <strong>próxima semana</strong>.';
     else if (firstIdx > 0 && firstIdx < 5)
-      aviso = `Solo puedes registrar del <strong>${DIAS_ES[firstIdx]} al viernes</strong> esta semana.`;
+      aviso = `Solo puedes registrar del <strong>${DIAS_ES[firstIdx]} al viernes</strong> esta semana.` + RECORDATORIO;
 
     // Lunes de "esta semana". Si es jue/vie, adelantar una semana para mostrar
     // los menús correctos (ACTUAL = semana entrante, SIGUIENTE = la que sigue).
