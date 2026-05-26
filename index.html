@@ -1291,7 +1291,7 @@ document.addEventListener('click', (e) => {
       <div class="rc-cn-fields">
         <div class="rc-cn-field">
           <label>Nombre completo</label>
-          <input type="text" id="cn-nombre" placeholder="Nombre Apellido Apellido" oninput="cnCapitalizar(this)">
+          <input type="text" id="cn-nombre" placeholder="Nombre(s) y Apellido(s)" oninput="cnCapitalizar(this)">
         </div>
         <div class="rc-cn-field rc-cn-field--half">
           <label>Teléfono (WhatsApp)</label>
@@ -1306,8 +1306,8 @@ document.addEventListener('click', (e) => {
           </select>
         </div>
         <div class="rc-cn-field rc-cn-field--half">
-          <label>Edad</label>
-          <input type="number" id="cn-edad" placeholder="Ej. 28" min="10" max="99">
+          <label>Fecha de nacimiento</label>
+          <input type="text" id="cn-edad" placeholder="01/01/1997" maxlength="10" oninput="cnFormatFecha(this)">
         </div>
         <div class="rc-cn-field rc-cn-field--half">
           <label>Ocupación</label>
@@ -1522,6 +1522,12 @@ function cnCargarSlots() {
     .catch(function(){ cnSlotsOcupados = {}; });
 }
 
+function cnFormatFecha(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 8);
+  if (v.length >= 5) v = v.slice(0,2) + '/' + v.slice(2,4) + '/' + v.slice(4);
+  else if (v.length >= 3) v = v.slice(0,2) + '/' + v.slice(2);
+  input.value = v;
+}
 function cnFormatTel(input) {
   var digits = input.value.replace(/\D/g, '').slice(0, 10);
   var fmt = digits;
@@ -1561,7 +1567,7 @@ function cnConfirmar() {
   }).catch(function(){});
 
   // Mensaje WhatsApp
-  var msg = 'Hola Valeria, me gustaría agendar una consulta nutricional.\n\n📋 *Mis datos:*\n• Nombre: ' + nombre + '\n• Teléfono: ' + tel + '\n• Sexo: ' + sexo + '\n• Edad: ' + edad + ' años\n• Ocupación: ' + ocupacion + '\n• Actividad física: ' + actividad + '\n\n📅 *Fecha solicitada:* ' + fechaTxt + '\n🕟 *Hora:* ' + cnHorarioSel + ' (sesión de 40 min)\n\n¡Quedo pendiente de confirmación!';
+  var msg = 'Hola Valeria, me gustaría agendar una consulta nutricional.\n\n📋 *Mis datos:*\n• Nombre: ' + nombre + '\n• Teléfono: ' + tel + '\n• Sexo: ' + sexo + '\n• Fecha de nacimiento: ' + edad + '\n• Ocupación: ' + ocupacion + '\n• Actividad física: ' + actividad + '\n\n📅 *Fecha solicitada:* ' + fechaTxt + '\n🕟 *Hora:* ' + cnHorarioSel + ' (sesión de 40 min)\n\n¡Quedo pendiente de confirmación!';
   document.getElementById('cn-wa-link').href = 'https://wa.me/523121182738?text=' + encodeURIComponent(msg);
 
   // Llenar banner de confirmación
