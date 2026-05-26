@@ -1377,7 +1377,6 @@ document.addEventListener('click', (e) => {
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:18px;">📅</span>
             <div>
               <div style="font-size:11px;opacity:.75;">Fecha</div>
               <div id="cn-res-fecha" style="font-weight:700;font-size:15px;"></div>
@@ -1480,7 +1479,7 @@ function cnRenderCal() {
 function cnMostrarSlot(f) {
   var txt = CN_DIAS[f.getDay()].charAt(0).toUpperCase() + CN_DIAS[f.getDay()].slice(1) + ' ' + f.getDate() + ' de ' + CN_MESES_MIN[f.getMonth()];
   var fechaKey = CN_DIAS[f.getDay()].charAt(0).toUpperCase() + CN_DIAS[f.getDay()].slice(1) + ', ' + f.getDate() + ' de ' + CN_MESES_MIN[f.getMonth()] + ' de ' + f.getFullYear();
-  document.getElementById('cn-slot-fecha').textContent = '📅 ' + txt;
+  document.getElementById('cn-slot-fecha').textContent = txt;
   document.getElementById('cn-slot-sel').style.display = '';
   cnHorarioSel = null;
   document.querySelectorAll('.rc-cn-slot-btn').forEach(function(b){ b.classList.remove('activo'); });
