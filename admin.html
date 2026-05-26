@@ -835,6 +835,17 @@ async function loadClients() {
       updateStatChips();
       document.getElementById('btnGroup').style.display = 'grid';
       document.getElementById('saveSectionEl').style.display = 'block';
+      // Geocodificar en background — actualiza distintivos conforme avanza
+      (async () => {
+        const cache  = JSON.parse(localStorage.getItem('rcGeoCache')||'{}');
+        const failed = JSON.parse(localStorage.getItem('rcGeoFailed')||'{}');
+        const pending = clients.filter(c => !cache[c.folio] && !failed[c.folio]);
+        for (let i = 0; i < pending.length; i++) {
+          await geocodeAddress(pending[i].folio, pending[i].domicilio);
+          renderClientList(); // actualiza distintivo en tiempo real
+          if (i < pending.length - 1) await sleep(1100); // respetar rate limit Nominatim
+        }
+      })();
     }
   } catch(e) {
     showToast('No se pudo conectar con Google Sheets');
@@ -859,14 +870,18 @@ function renderClientList() {
     const repBtns = repNames.map((n,ri) =>
       `<button class="rep-btn${asgn===ri?' selected':''}" style="${asgn===ri?`background:${CLUSTER_COLORS[ri]};border-color:${CLUSTER_COLORS[ri]}`:''}" onclick="assignTo('${c.folio}',${ri})">${n.split(' ')[0]}</button>`
     ).join('');
-    const geoTag = hasCoords
-      ? `<span style="font-size:10px;color:var(--g);margin-left:4px"><i class="ti ti-map-pin"></i></span>`
-      : `<span style="font-size:10px;color:var(--gray);margin-left:4px" title="Sin coordenadas"><i class="ti ti-map-pin-off"></i></span>`;
+    const geoFailed = JSON.parse(localStorage.getItem('rcGeoFailed')||'{}');
+    const isFailed  = !!geoFailed[c.folio];
+    const geoDot = hasCoords
+      ? `<span title="Dirección verificada" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:#15803D;background:#DCFCE7;border-radius:20px;padding:1px 6px;margin-left:5px"><i class="ti ti-map-check" style="font-size:10px"></i>OK</span>`
+      : isFailed
+        ? `<span title="Dirección no encontrada en mapa" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:#B91C1C;background:#FEE2E2;border-radius:20px;padding:1px 6px;margin-left:5px"><i class="ti ti-map-x" style="font-size:10px"></i>No encontrada</span>`
+        : `<span title="Verificando dirección…" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--gray);background:var(--gray2);border-radius:20px;padding:1px 6px;margin-left:5px"><i class="ti ti-loader" style="font-size:10px;animation:spin .8s linear infinite"></i></span>`;
     return `<div class="client-card">
       <div class="client-card-head">
         <div style="width:26px;height:26px;border-radius:50%;background:${bubbleBg};color:${bubbleColor};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;transition:background .2s">${asgn!==undefined?asgn+1:'?'}</div>
         <div class="client-card-info">
-          <div class="cc-name" style="display:flex;align-items:center">${c.nombre}${geoTag}</div>
+          <div class="cc-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px">${c.nombre}${geoDot}</div>
           <div class="cc-addr"><i class="ti ti-map-pin" style="font-size:11px"></i> ${c.domicilio||'Sin dirección'}</div>
           ${c.platillo?`<div class="cc-platillo"><i class="ti ti-tools-kitchen-2" style="font-size:11px"></i> ${c.platillo}</div>`:''}
         </div>
@@ -1118,8 +1133,10 @@ function renderMonitor(reps) {
 function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
 async function geocodeAddress(folio, domicilio) {
-  const cache = JSON.parse(localStorage.getItem('rcGeoCache')||'{}');
+  const cache  = JSON.parse(localStorage.getItem('rcGeoCache')||'{}');
   if (cache[folio]) return cache[folio];
+  const failed = JSON.parse(localStorage.getItem('rcGeoFailed')||'{}');
+  if (failed[folio]) return null; // ya intentado, no encontrado
   const q = encodeURIComponent(domicilio + ', Colima, Mexico');
   try {
     const res  = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&limit=1`, {
@@ -1130,7 +1147,13 @@ async function geocodeAddress(folio, domicilio) {
       const coords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
       cache[folio] = coords;
       localStorage.setItem('rcGeoCache', JSON.stringify(cache));
+      // ya no está fallido
+      delete failed[folio];
+      localStorage.setItem('rcGeoFailed', JSON.stringify(failed));
       return coords;
+    } else {
+      failed[folio] = true;
+      localStorage.setItem('rcGeoFailed', JSON.stringify(failed));
     }
   } catch(e) {}
   return null;
