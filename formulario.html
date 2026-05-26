@@ -1109,8 +1109,12 @@
       aviso = 'El periodo de registro ya cerró. Regresa <strong>mañana martes a partir de las 6:00 AM</strong> para registrarte.';
     else if (dow >= 2 && dow <= 4 && mins < DIA_ABRE)
       aviso = `El registro para esta semana abre hoy <strong>a partir de las 6:00 AM</strong>.`;
-    else if (dow >= 2 && dow <= 4 && mins >= CIERRE)
-      aviso = `El periodo de registro cerró. Regresa <strong>mañana a partir de las 6:00 AM</strong> para registrarte.`;
+    else if (dow >= 2 && dow <= 4 && mins >= CIERRE) {
+      const proximoDia = dow === 4
+        ? 'el <strong>sábado a partir de las 6:00 AM</strong>'
+        : `mañana <strong>${DIAS_ES[dow - 1]} a partir de las 6:00 AM</strong>`;
+      aviso = `El periodo de registro cerró. Regresa ${proximoDia} para registrarte.`;
+    }
     else if (dow === 5)
       aviso = 'El periodo de registro ya cerró. Regresa el <strong>sábado a partir de las 6:00 AM</strong> para registrarte para la próxima semana.';
     else if (dow === 6)
