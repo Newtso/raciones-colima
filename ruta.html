@@ -291,9 +291,11 @@ async function sendEnCamino(idx) {
   const nombre = c.nombre || 'Cliente';
   const msg = `Hola ${fn(nombre)}! 🛵 Soy el repartidor de *${EMPRESA}*, estoy en camino a tu domicilio. El tiempo estimado de llegada es de *${etaText}*. ¡Gracias por la espera!`;
 
-  if (btn) {
-    btn.disabled = false;
-    btn.innerHTML = `<i class="ti ti-navigation"></i> En camino · ${etaText}`;
+  // Re-query botón — render() pudo haber reemplazado el DOM durante calcETA()
+  const btnFinal = document.querySelector(`[data-camino-btn="${idx}"]`);
+  if (btnFinal) {
+    btnFinal.disabled = false;
+    btnFinal.innerHTML = `<i class="ti ti-navigation"></i> En camino · ${etaText}`;
   }
   window.open(waLink(c.tel || '', msg), '_blank');
 }

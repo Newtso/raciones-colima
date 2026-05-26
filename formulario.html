@@ -1113,7 +1113,7 @@
     else if (dow >= 2 && dow <= 4 && mins >= CIERRE) {
       const proximoDia = dow === 4
         ? 'el <strong>sábado a partir de las 6:00 AM</strong>'
-        : `mañana <strong>${DIAS_ES[dow - 1]} a partir de las 6:00 AM</strong>`;
+        : `mañana <strong>${DIAS_ES[dow]} a partir de las 6:00 AM</strong>`;
       aviso = `El periodo de registro cerró. Regresa ${proximoDia} para registrarte.` + RECORDATORIO;
     }
     else if (dow === 5)
@@ -1178,7 +1178,7 @@
       ['aviso-no','aviso-ext'].forEach(id => {
         const el = document.getElementById(id);
         el.classList.add('show');
-        el.querySelector('span').textContent = SEMANAS.aviso;
+        el.querySelector('span').innerHTML = SEMANAS.aviso;
       });
     }
   }
